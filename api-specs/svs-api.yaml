@@ -8,7 +8,7 @@ info:
     url: https://www.solanavibestation.com
   license:
     name: MIT OR Apache-2.0
-    identifier: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
 
 servers:
   - url: https://beta-api.solanavibestation.com
@@ -403,12 +403,12 @@ components:
       properties:
         prices:
           type: array
-          description: Array of market state objects or null for unavailable data
+          description: Array of market state objects (entries may be null for tokens with no pricing data). When non-null, each item conforms to the `MarketState` schema below.
           items:
-            oneOf:
-              - type: 'null'
-                description: No pricing data available for this token
-              - $ref: '#/components/schemas/MarketState'
+            type: object
+            nullable: true
+            description: A `MarketState` object, or null when no pricing data is available for the corresponding token.
+            additionalProperties: true
 
     MarketState:
       type: object
@@ -500,10 +500,10 @@ components:
       description: Response containing comprehensive mint information
       properties:
         mint_info:
-          oneOf:
-            - type: 'null'
-              description: No information found for the specified mint
-            - $ref: '#/components/schemas/MintSummary'
+          type: object
+          nullable: true
+          description: Comprehensive mint information conforming to the `MintSummary` schema, or null if no information was found for the specified mint.
+          additionalProperties: true
 
     MintSummary:
       type: object
@@ -654,7 +654,4 @@ security:
 tags:
   - name: Status
     description: API health and status endpoints
-  - name: Token Information
-    description: Endpoints for retrieving token metadata and comprehensive mint information
-  - name: Token Pricing
-    description: Endpoints for retrieving token pricing data at multiple timeframes
+  - name: Token I
