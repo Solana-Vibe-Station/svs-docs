@@ -1,0 +1,660 @@
+openapi: 3.0.3
+info:
+  title: Solana Vibe Station API
+  description: Comprehensive API for token metadata and pricing information on the Solana blockchain. Provides access to current and historical pricing data, comprehensive mint information, and token metadata from pump.fun, pump.swap, and Raydium launches.
+  version: 2.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    identifier: MIT OR Apache-2.0
+
+servers:
+  - url: https://beta-api.solanavibestation.com
+    description: Solana Vibe Station API Server
+
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Health Check
+      description: Check the health status of the API service
+      tags:
+        - Status
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - healthy
+                    example: healthy
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - {}
+        - AuthHeader: []
+        - URLParameter: []
+
+  /metadata:
+    post:
+      operationId: metadata
+      summary: Get Token Metadata
+      description: Retrieve comprehensive metadata information for specified token mints. Returns basic token information including name, symbol, URI, fungibility, and creator details. Supports up to 36 mints per request.
+      tags:
+        - Token Information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetadataRequest'
+            examples:
+              single_token:
+                summary: Single token metadata request
+                value:
+                  mints:
+                    - EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+              multiple_tokens:
+                summary: Multiple tokens metadata request
+                value:
+                  mints:
+                    - EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+                    - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                    - Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB
+      responses:
+        '200':
+          description: Successful metadata retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetadataResponse'
+              examples:
+                success:
+                  summary: Successful metadata response
+                  value:
+                    metas:
+                      - mint: EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+                        name: dogwifhat
+                        symbol: $WIF
+                        uri: https://bafkreihwqhounu3cdwgvk2gc2dqcinpntlccbo3xcy4xuerd24yndldl5q.ipfs.nftstorage.link
+                        fungible: true
+                        primary_creator: "11111111111111111111111111111111"
+                        off_chain_metadata:
+                          description: Popular meme Dogwifhat vibes wif frens onchain @Dogwifcoin on X
+                          image: https://bafkreibk3covs5ltyqxa272uodhculbr6kea6betidfwy3ajsav2vjzyum.ipfs.nftstorage.link
+                          name: dogwifhat
+                          symbol: $WIF
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetadataError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - {}
+        - AuthHeader: []
+        - URLParameter: []
+
+  /price:
+    post:
+      operationId: price
+      summary: Get Token Prices
+      description: Retrieve current and historical pricing information for specified token mints launched through pump.fun, pump.swap, and Raydium. Provides price data at multiple timeframes (1min, 15min, 1h, 24h) plus the latest price. Supports up to 36 mints per request.
+      tags:
+        - Token Pricing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceRequest'
+            examples:
+              single_token:
+                summary: Single token price request
+                value:
+                  mints:
+                    - EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+              multiple_tokens:
+                summary: Multiple tokens price request
+                value:
+                  mints:
+                    - EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+                    - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                    - Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB
+      responses:
+        '200':
+          description: Successful price data retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+              examples:
+                success:
+                  summary: Successful price response with complete data
+                  value:
+                    prices:
+                      - base_mint: EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+                        quote_mint: So11111111111111111111111111111111111111112
+                        avg_price_1min: 180.45
+                        avg_price_15min: 179.83
+                        avg_price_1h: 178.92
+                        avg_price_24h: 175.67
+                        latest_price: 180.12
+                unavailable:
+                  summary: Response with unavailable price data
+                  value:
+                    prices:
+                      - null
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - {}
+        - AuthHeader: []
+        - URLParameter: []
+
+  /mint_info:
+    post:
+      operationId: mint_info
+      summary: Get Comprehensive Mint Information
+      description: Retrieve comprehensive information about a token mint including metadata, creator information, and recent trading history. Currently supports recent tokens launched via pump.fun. Returns a single mint's complete data including trade events.
+      tags:
+        - Token Information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MintInfoRequest'
+            examples:
+              bonk:
+                summary: Bonk token mint info request
+                value:
+                  mint: So11111111111111111111111111111111111111112
+      responses:
+        '200':
+          description: Successful mint information retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MintInfoResponse'
+              examples:
+                with_data:
+                  summary: Successful response with mint information
+                  value:
+                    mint_info:
+                      name: Bonk
+                      symbol: BONK
+                      uri: https://metadata.example.com/bonk.json
+                      user: DRiP2Pn2K6fuMLKQmt5rZWxa91LAiGZX7LHa8geqtdJr
+                      timestamp: 1672531200
+                      trade_events:
+                        - timestamp: 1672531800
+                          user: 8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj
+                          sol_amount: 1500000000
+                          token_amount: 1000000000000
+                          is_buy: true
+                        - timestamp: 1672532400
+                          user: 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM
+                          sol_amount: 750000000
+                          token_amount: 500000000000
+                          is_buy: false
+                      off_chain_metadata:
+                        description: The first dog coin on Solana
+                        image: https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I
+                        external_url: https://bonkcoin.com
+                no_data:
+                  summary: Successful response with no mint information found
+                  value:
+                    mint_info: null
+        '400':
+          description: Bad request - invalid mint address format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid mint address format
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Mint not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Mint address not found in our database
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - {}
+        - AuthHeader: []
+        - URLParameter: []
+
+components:
+  schemas:
+    MetadataRequest:
+      type: object
+      description: Request for token metadata information
+      required:
+        - mints
+      properties:
+        mints:
+          type: array
+          description: Array of token mint addresses to retrieve metadata for (maximum 36 mints per request)
+          minItems: 1
+          maxItems: 36
+          items:
+            type: string
+            description: Token mint address (base58 encoded)
+            example: EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+
+    MetadataResponse:
+      type: object
+      description: Response containing token metadata information
+      required:
+        - metas
+      properties:
+        metas:
+          type: array
+          description: Array of token metadata objects
+          items:
+            $ref: '#/components/schemas/TokenMetadata'
+
+    TokenMetadata:
+      type: object
+      description: Token metadata information
+      required:
+        - mint
+        - name
+        - symbol
+        - uri
+        - fungible
+        - primary_creator
+      properties:
+        mint:
+          type: string
+          description: Token mint address
+          example: EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+        name:
+          type: string
+          description: Token name
+          example: dogwifhat
+        symbol:
+          type: string
+          description: Token symbol/ticker
+          example: $WIF
+        uri:
+          type: string
+          description: URI pointing to token metadata or image
+          example: https://bafkreihwqhounu3cdwgvk2gc2dqcinpntlccbo3xcy4xuerd24yndldl5q.ipfs.nftstorage.link
+        fungible:
+          type: boolean
+          description: Whether the token is fungible
+          example: true
+        primary_creator:
+          type: string
+          description: Primary creator/authority of the token
+          example: "11111111111111111111111111111111"
+        off_chain_metadata:
+          type: object
+          description: Additional off-chain metadata (structure varies by token standard)
+          additionalProperties: true
+
+    MetadataError:
+      oneOf:
+        - type: object
+          required:
+            - InvalidInput
+          properties:
+            InvalidInput:
+              type: string
+              description: Error message for invalid input format
+              example: Request must contain valid mint addresses
+        - type: object
+          required:
+            - InvalidMint
+          properties:
+            InvalidMint:
+              type: string
+              description: Error message for invalid mint address
+              example: Invalid mint address format
+        - type: object
+          required:
+            - InvalidMetadata
+          properties:
+            InvalidMetadata:
+              type: string
+              description: Error message for invalid or corrupted metadata
+              example: Token metadata is corrupted or invalid
+        - type: object
+          required:
+            - TooManyMints
+          properties:
+            TooManyMints:
+              type: string
+              description: Error message when too many mints are requested
+              example: Maximum of 36 mints allowed per request
+
+    PriceRequest:
+      type: object
+      description: Request for token pricing information
+      required:
+        - mints
+      properties:
+        mints:
+          type: array
+          description: Array of token mint addresses to retrieve pricing for (maximum 36 mints per request)
+          minItems: 1
+          maxItems: 36
+          items:
+            type: string
+            description: Token mint address (base58 encoded)
+            example: EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+
+    PriceResponse:
+      type: object
+      description: Response containing token pricing information
+      required:
+        - prices
+      properties:
+        prices:
+          type: array
+          description: Array of market state objects or null for unavailable data
+          items:
+            oneOf:
+              - type: 'null'
+                description: No pricing data available for this token
+              - $ref: '#/components/schemas/MarketState'
+
+    MarketState:
+      type: object
+      description: Current market state and pricing information for a token pair
+      required:
+        - base_mint
+        - quote_mint
+        - avg_price_1min
+        - avg_price_15min
+        - avg_price_1h
+        - avg_price_24h
+        - latest_price
+      properties:
+        base_mint:
+          type: string
+          description: Base token mint address
+          example: EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm
+        quote_mint:
+          type: string
+          description: Quote token mint address (typically wrapped SOL)
+          example: So11111111111111111111111111111111111111112
+        avg_price_1min:
+          type: number
+          format: double
+          description: Average price over the last 1 minute
+          example: 180.45
+        avg_price_15min:
+          type: number
+          format: double
+          description: Average price over the last 15 minutes
+          example: 179.83
+        avg_price_1h:
+          type: number
+          format: double
+          description: Average price over the last 1 hour
+          example: 178.92
+        avg_price_24h:
+          type: number
+          format: double
+          description: Average price over the last 24 hours
+          example: 175.67
+        latest_price:
+          type: number
+          format: double
+          description: Most recent trade price
+          example: 180.12
+
+    PriceError:
+      oneOf:
+        - type: object
+          required:
+            - InvalidInput
+          properties:
+            InvalidInput:
+              type: string
+              description: Error message for invalid input format
+              example: Request must contain valid mint addresses
+        - type: object
+          required:
+            - InvalidMint
+          properties:
+            InvalidMint:
+              type: string
+              description: Error message for invalid mint address
+              example: Invalid mint address format
+        - type: object
+          required:
+            - TooManyMints
+          properties:
+            TooManyMints:
+              type: string
+              description: Error message when too many mints are requested
+              example: Maximum of 36 mints allowed per request
+
+    MintInfoRequest:
+      type: object
+      description: Request for comprehensive mint information
+      required:
+        - mint
+      properties:
+        mint:
+          type: string
+          description: Token mint address (base58 encoded)
+          pattern: ^[1-9A-HJ-NP-Za-km-z]{32,44}$
+          example: So11111111111111111111111111111111111111112
+
+    MintInfoResponse:
+      type: object
+      description: Response containing comprehensive mint information
+      properties:
+        mint_info:
+          oneOf:
+            - type: 'null'
+              description: No information found for the specified mint
+            - $ref: '#/components/schemas/MintSummary'
+
+    MintSummary:
+      type: object
+      description: Comprehensive summary of mint information including metadata and trading activity
+      required:
+        - name
+        - symbol
+        - uri
+        - user
+        - timestamp
+        - trade_events
+        - off_chain_metadata
+      properties:
+        name:
+          type: string
+          description: Token name
+          example: Bonk
+        symbol:
+          type: string
+          description: Token symbol
+          example: BONK
+        uri:
+          type: string
+          description: URI pointing to token metadata
+          format: uri
+          example: https://metadata.example.com/bonk.json
+        user:
+          type: string
+          description: Address of the mint creator/authority
+          pattern: ^[1-9A-HJ-NP-Za-km-z]{32,44}$
+          example: DRiP2Pn2K6fuMLKQmt5rZWxa91LAiGZX7LHa8geqtdJr
+        timestamp:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Unix timestamp of mint creation
+          example: 1672531200
+        trade_events:
+          type: array
+          description: Array of recent trading events for this token
+          items:
+            $ref: '#/components/schemas/TradeEvent'
+        off_chain_metadata:
+          type: object
+          description: Additional off-chain metadata (structure varies by token standard)
+          additionalProperties: true
+
+    TradeEvent:
+      type: object
+      description: Summary of a trading event for the token
+      required:
+        - timestamp
+        - user
+        - sol_amount
+        - token_amount
+        - is_buy
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix timestamp of the trade
+          example: 1672531800
+        user:
+          type: string
+          description: Address of the trader
+          pattern: ^[1-9A-HJ-NP-Za-km-z]{32,44}$
+          example: 8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj
+        sol_amount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Amount of SOL involved in the trade (in lamports)
+          example: 1500000000
+        token_amount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Amount of tokens involved in the trade (in base units)
+          example: 1000000000000
+        is_buy:
+          type: boolean
+          description: True if this was a buy order, false if it was a sell order
+          example: true
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - authentication credentials are invalid or missing
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Unauthorized
+
+    ForbiddenError:
+      description: Forbidden - authenticated user does not have permission
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Forbidden
+
+    TooManyRequestsError:
+      description: Too Many Requests - rate limit exceeded
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Too Many Requests
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Internal Server Error
+
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Authorization header for API key authentication.
+
+        **Example:**
+        ```
+        Authorization: your-api-key-here
+        ```
+
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: |
+        API key passed as a URL query parameter for authentication.
+
+        **Example:**
+        ```
+        https://beta-api.solanavibestation.com/metadata?api_key=your-api-key-here
+        ```
+
+security:
+  - {}
+  - AuthHeader: []
+  - URLParameter: []
+
+tags:
+  - name: Status
+    description: API health and status endpoints
+  - name: Token Information
+    description: Endpoints for retrieving token metadata and comprehensive mint information
+  - name: Token Pricing
+    description: Endpoints for retrieving token pricing data at multiple timeframes

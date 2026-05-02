@@ -1,0 +1,46 @@
+name: Validate OpenAPI Specs
+
+on:
+  push:
+    paths:
+      - 'api-specs/**'
+  pull_request:
+    paths:
+      - 'api-specs/**'
+
+jobs:
+  validate:
+    name: Validate OpenAPI Specifications
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Redocly CLI
+        run: npm install -g @redocly/cli
+
+      - name: Validate SVS API spec
+        run: redocly lint api-specs/svs-api.yaml --skip-rule no-unused-components
+
+      - name: Validate Solana RPC spec
+        run: redocly lint api-specs/solana-rpc.yaml --skip-rule no-unused-components
+
+      - name: Validate Historical RPC spec
+        run: redocly lint api-specs/historical-rpc.yaml --skip-rule no-unused-components
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## OpenAPI Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Spec | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SVS API | ${{ steps.validate-svs.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Solana RPC | ${{ steps.validate-rpc.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Historical RPC | ${{ steps.validate-historical.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY

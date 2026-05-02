@@ -1,0 +1,511 @@
+openapi: 3.0.3
+info:
+  title: Solana Vibe Station Historical RPC
+  description: |
+    Solana Historical JSON-RPC API endpoints hosted by Solana Vibe Station.
+
+    This API provides access to historical Solana blockchain data through the standard JSON-RPC 2.0 protocol.
+    All requests use POST to the /historical path with the method specified in the request body.
+
+    **Important:** The historical API only supports the "finalized" commitment level for all requests.
+    This ensures you get immutable, historical blockchain data.
+
+    Supported methods:
+    - Blocks: getBlock, getBlocks, getBlocksWithLimit, getBlockTime, getFirstAvailableBlock
+    - Transactions: getTransaction
+    - Signatures: getSignaturesForAddress, getSignatureStatuses
+    - Utilities: getSlot
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    identifier: MIT OR Apache-2.0
+
+servers:
+  - url: https://public.rpc.solanavibestation.com/historical
+    description: Public historical endpoint (rate-limited)
+  - url: https://basic.rpc.solanavibestation.com/historical
+    description: Basic tier historical endpoint
+  - url: https://ultra.rpc.solanavibestation.com/historical
+    description: Ultra tier historical endpoint
+  - url: https://elite.rpc.solanavibestation.com/historical
+    description: Elite tier historical endpoint
+  - url: https://epic.rpc.solanavibestation.com/historical
+    description: Epic tier historical endpoint
+  - url: https://basic.swqos.solanavibestation.com/historical
+    description: Basic tier historical with Smart QoS
+  - url: https://ultra.swqos.solanavibestation.com/historical
+    description: Ultra tier historical with Smart QoS
+  - url: https://elite.swqos.solanavibestation.com/historical
+    description: Elite tier historical with Smart QoS
+
+paths:
+  /historical:
+    post:
+      summary: Solana Historical JSON-RPC Methods
+      description: |
+        Submit JSON-RPC 2.0 requests to query historical Solana blockchain data.
+
+        **Important:** The historical API only supports the "finalized" commitment level.
+        All requests implicitly use finalized commitment regardless of what is specified.
+
+        **How to use:**
+
+        Specify the method name in the request body's "method" field. All methods follow the JSON-RPC 2.0 specification.
+
+        **Example request structure:**
+        ```json
+        {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "methodName",
+          "params": [param1, param2, ...]
+        }
+        ```
+
+        The response will include either a "result" field (on success) or an "error" field (on failure).
+
+        **Supported Methods:**
+
+        - **getBlock** - Returns block information with transaction details (only finalized blocks)
+        - **getBlocks** - Returns an array of confirmed block slot numbers (only finalized blocks)
+        - **getBlocksWithLimit** - Returns confirmed blocks with specified limit (only finalized blocks)
+        - **getBlockTime** - Returns estimated production time for a block (Unix timestamp)
+        - **getFirstAvailableBlock** - Returns the slot of the first available block
+        - **getTransaction** - Returns transaction details (only for finalized transactions)
+        - **getSignaturesForAddress** - Returns transaction signatures for an address
+        - **getSignatureStatuses** - Returns status information for transaction signatures
+        - **getSlot** - Returns the current slot (returns latest finalized slot)
+      tags:
+        - Historical JSON-RPC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JsonRpcRequest'
+            examples:
+              getBlock:
+                summary: getBlock - Get historical block
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                    - 378967388
+                    - maxSupportedTransactionVersion: 0
+              getTransaction:
+                summary: getTransaction - Get historical transaction
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTransaction
+                  params:
+                    - 2id3YC2jK9G5Wb2GmXYhqJqhb5S1n9mfK8ydGT6YWq9DJNWjPvAo1e5uDYKKxe8Y2k1Vp4nUJGHG9xEJT1m4F9G
+                    - encoding: json
+                      maxSupportedTransactionVersion: 0
+              getBlockTime:
+                summary: getBlockTime - Get when a block was produced
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlockTime
+                  params:
+                    - 378967388
+              getBlocks:
+                summary: getBlocks - Get range of historical blocks
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlocks
+                  params:
+                    - 100000
+                    - 100010
+              getSignaturesForAddress:
+                summary: getSignaturesForAddress - Get historical signatures
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignaturesForAddress
+                  params:
+                    - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - limit: 10
+      responses:
+        '200':
+          description: Successful historical JSON-RPC response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+              examples:
+                success_block:
+                  summary: Successful block response
+                  value:
+                    jsonrpc: '2.0'
+                    id: 1
+                    result:
+                      blockhash: 3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA
+                      previousBlockhash: mfcyqEXB3DnHXki6KjjmZck6YjmZLvpAByy2fj4nh6B
+                      parentSlot: 429
+                      blockHeight: 428
+                      blockTime: 1625097600
+                      transactions: []
+                success_transaction:
+                  summary: Successful transaction response
+                  value:
+                    jsonrpc: '2.0'
+                    id: 1
+                    result:
+                      slot: 123456789
+                      blockTime: 1625097600
+                      transaction:
+                        message:
+                          accountKeys:
+                            - 3UVYmECPPMZSCqWKfENfuoTv51fTDTWicX9xmBD2euKe
+                          instructions: []
+                          recentBlockhash: 11111111111111111111111111111112
+                        signatures:
+                          - 2id3YC2jK9G5Wb2GmXYhqJqhb5S1n9mfK8ydGT6YWq9DJNWjPvAo1e5uDYKKxe8Y2k1Vp4nUJGHG9xEJT1m4F9G
+                      meta:
+                        fee: 5000
+                        preBalances:
+                          - 1000000000
+                        postBalances:
+                          - 999995000
+                error_response:
+                  summary: Error response example
+                  value:
+                    jsonrpc: '2.0'
+                    id: 1
+                    error:
+                      code: -32602
+                      message: Invalid params
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Unauthorized
+        '403':
+          description: Forbidden
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Forbidden
+        '429':
+          description: Too Many Requests
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Too Many Requests
+        '500':
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Internal Server Error
+      security:
+        - {}
+        - AuthHeader: []
+        - URLParameter: []
+
+components:
+  schemas:
+    JsonRpcRequest:
+      type: object
+      description: JSON-RPC 2.0 request object for historical API
+      required:
+        - jsonrpc
+        - id
+        - method
+        - params
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+            - '2.0'
+          description: JSON-RPC protocol version (must be 2.0)
+          example: '2.0'
+        id:
+          oneOf:
+            - type: string
+            - type: number
+          description: Request identifier that will be echoed back in the response
+          example: 1
+        method:
+          type: string
+          description: |
+            The name of the historical RPC method to call.
+
+            **Supported Block Methods:**
+            - getBlock - Get block information (finalized only)
+            - getBlocks - Get array of confirmed block slots
+            - getBlocksWithLimit - Get confirmed blocks with limit
+            - getBlockTime - Get block production time (Unix timestamp)
+            - getFirstAvailableBlock - Get first available block slot
+
+            **Supported Transaction Methods:**
+            - getTransaction - Get transaction details (finalized only)
+
+            **Supported Signature Methods:**
+            - getSignaturesForAddress - Get transaction signatures for an address
+            - getSignatureStatuses - Get status of transaction signatures
+
+            **Supported Utility Methods:**
+            - getSlot - Get latest finalized slot
+          example: getBlock
+        params:
+          type: array
+          description: Method-specific parameters. The structure varies based on the method being called.
+          example:
+            - 378967388
+            - maxSupportedTransactionVersion: 0
+
+    JsonRpcResponse:
+      oneOf:
+        - $ref: '#/components/schemas/JsonRpcSuccessResponse'
+        - $ref: '#/components/schemas/JsonRpcErrorResponse'
+      description: JSON-RPC 2.0 response (success or error)
+
+    JsonRpcSuccessResponse:
+      type: object
+      description: Successful JSON-RPC response
+      required:
+        - jsonrpc
+        - id
+        - result
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+            - '2.0'
+          example: '2.0'
+        id:
+          oneOf:
+            - type: string
+            - type: number
+          description: Request identifier from the original request
+          example: 1
+        result:
+          description: The result of the RPC method call. Structure depends on the method.
+          additionalProperties: true
+
+    JsonRpcErrorResponse:
+      type: object
+      description: Error JSON-RPC response
+      required:
+        - jsonrpc
+        - id
+        - error
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+            - '2.0'
+          example: '2.0'
+        id:
+          oneOf:
+            - type: string
+            - type: number
+          description: Request identifier from the original request
+          example: 1
+        error:
+          $ref: '#/components/schemas/JsonRpcError'
+
+    JsonRpcError:
+      type: object
+      description: JSON-RPC error object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: |
+            Numeric error code following JSON-RPC 2.0 specification:
+            - `-32700`: Parse error - Invalid JSON was received by the server
+            - `-32600`: Invalid Request - The JSON sent is not a valid Request object
+            - `-32601`: Method not found - The method does not exist or is not available
+            - `-32602`: Invalid params - Invalid method parameter(s)
+            - `-32603`: Internal error - Internal JSON-RPC error
+            - `-32005`: Too Many Requests - Rate limit exceeded
+            - `-32003`: Unauthorized - Authentication failed
+            - `-32015`: Transaction version not supported - Transaction version not supported
+          example: -32602
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid params
+        data:
+          type: object
+          description: Additional structured error information (optional, method-dependent)
+          additionalProperties: true
+
+    BlockInfo:
+      type: object
+      description: Block information object
+      required:
+        - blockhash
+        - previousBlockhash
+        - parentSlot
+        - transactions
+      properties:
+        blockhash:
+          type: string
+          description: The blockhash of this block (base58 encoded)
+          example: 3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA
+        previousBlockhash:
+          type: string
+          description: The blockhash of the parent block (base58 encoded)
+          example: mfcyqEXB3DnHXki6KjjmZck6YjmZLvpAByy2fj4nh6B
+        parentSlot:
+          type: integer
+          format: int64
+          description: The slot number of the parent block
+          example: 429
+        blockHeight:
+          type: integer
+          format: int64
+          description: The block height (number of blocks beneath this block)
+          example: 428
+        blockTime:
+          oneOf:
+            - type: integer
+              format: int64
+            - type: 'null'
+          description: Estimated Unix timestamp of block production (null if unavailable)
+          example: 1625097600
+        transactions:
+          type: array
+          description: Array of transactions in the block
+          items: {}
+
+    TransactionInfo:
+      type: object
+      description: Transaction information object
+      required:
+        - slot
+        - transaction
+      properties:
+        slot:
+          type: integer
+          format: int64
+          description: The slot this transaction was processed in
+          example: 123456789
+        blockTime:
+          oneOf:
+            - type: integer
+              format: int64
+            - type: 'null'
+          description: Unix timestamp of when the transaction was processed
+          example: 1625097600
+        version:
+          oneOf:
+            - type: string
+              enum:
+                - legacy
+            - type: integer
+              enum:
+                - 0
+          description: Transaction version (legacy or 0)
+          example: legacy
+        transaction:
+          type: object
+          description: The transaction object with message and signatures
+          additionalProperties: true
+        meta:
+          oneOf:
+            - type: object
+              description: Transaction metadata
+              additionalProperties: true
+            - type: 'null'
+              description: Metadata not available
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - authentication required or invalid
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Unauthorized
+
+    ForbiddenError:
+      description: Forbidden - insufficient permissions
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Forbidden
+
+    TooManyRequestsError:
+      description: Too Many Requests - rate limit exceeded
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Too Many Requests
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Internal Server Error
+
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Authorization header for API key authentication.
+
+        **Example:**
+        ```
+        Authorization: your-api-key-here
+        ```
+
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: |
+        API key passed as a URL query parameter for authentication.
+
+        **Example:**
+        ```
+        https://public.rpc.solanavibestation.com/historical?api_key=your-api-key-here
+        ```
+
+security:
+  - {}
+  - AuthHeader: []
+  - URLParameter: []
+
+tags:
+  - name: Historical JSON-RPC
+    description: |
+      Solana Historical JSON-RPC API endpoint for querying finalized blockchain data.
+
+      This API provides access to immutable, historical blockchain data. All requests use the
+      POST method with JSON-RPC 2.0 format to the /historical path. The method to call is
+      specified in the request body's "method" field.
+
+      **Commitment Level:**
+      Only the "finalized" commitment level is supported. All data returned is immutable and
+      confirmed by the Solana network.
+    externalDocs:
+      description: Solana RPC API Documentation
+      url: https://docs.solana.com/api/http
+
+externalDocs:
+  description: Solana RPC API Documentation
+  url: https://docs.solana.com/api/http

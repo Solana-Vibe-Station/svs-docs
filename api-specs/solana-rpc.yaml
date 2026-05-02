@@ -1,0 +1,480 @@
+openapi: 3.0.3
+info:
+  title: Solana Vibe Station RPC
+  description: |
+    Solana JSON-RPC API endpoints hosted by Solana Vibe Station.
+
+    This API provides access to Solana blockchain data through standard JSON-RPC 2.0 protocol.
+    All requests use POST to the root path (/) with the method specified in the request body.
+
+    Supported methods:
+    - Account Data: getAccountInfo, getBalance, getMultipleAccounts, getProgramAccounts, getTokenAccountBalance, getTokenAccountsByDelegate, getTokenAccountsByOwner, getTokenLargestAccounts, getTokenSupply
+    - Blocks: getBlock, getBlocks, getBlocksWithLimit, getBlockHeight, getBlockTime, getBlockCommitment, getBlockProduction
+    - Transactions: getTransaction, getTransactionCount, sendTransaction, simulateTransaction
+    - Signatures: getSignaturesForAddress, getSignatureStatuses
+    - Cluster: getClusterNodes, getEpochInfo, getHealth, getIdentity, getInflationGovernor, getInflationRate, getInflationReward, getLeaderSchedule, getSlot, getSlotLeader, getSlotLeaders, getSupply, getVersion, getVoteAccounts
+    - Utilities: getGenesisHash, getLatestBlockhash, isBlockhashValid, minimumLedgerSlot, getRecentPerformanceSamples, getRecentPrioritizationFees, requestAirdrop
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    identifier: MIT OR Apache-2.0
+
+servers:
+  - url: https://public.rpc.solanavibestation.com
+    description: Public endpoint (rate-limited)
+  - url: https://basic.rpc.solanavibestation.com
+    description: Basic tier endpoint
+  - url: https://ultra.rpc.solanavibestation.com
+    description: Ultra tier endpoint
+  - url: https://elite.rpc.solanavibestation.com
+    description: Elite tier endpoint
+  - url: https://epic.rpc.solanavibestation.com
+    description: Epic tier endpoint
+  - url: https://basic.swqos.solanavibestation.com
+    description: Basic tier with Smart QoS
+  - url: https://ultra.swqos.solanavibestation.com
+    description: Ultra tier with Smart QoS
+  - url: https://elite.swqos.solanavibestation.com
+    description: Elite tier with Smart QoS
+
+paths:
+  /:
+    post:
+      summary: Solana JSON-RPC Methods
+      description: |
+        Submit JSON-RPC 2.0 requests to interact with the Solana blockchain.
+
+        **How to use:**
+
+        Specify the method name in the request body's "method" field. All methods follow the JSON-RPC 2.0 specification.
+
+        **Example request structure:**
+        ```json
+        {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "methodName",
+          "params": [param1, param2, ...]
+        }
+        ```
+
+        The response will include either a "result" field (on success) or an "error" field (on failure).
+      tags:
+        - JSON-RPC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JsonRpcRequest'
+            examples:
+              getBalance:
+                summary: getBalance - Get account balance
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBalance
+                  params:
+                    - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - commitment: finalized
+              getBlock:
+                summary: getBlock - Get block information
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                    - 378967388
+                    - maxSupportedTransactionVersion: 0
+              sendTransaction:
+                summary: sendTransaction - Submit a transaction
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: sendTransaction
+                  params:
+                    - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsaBCncVG7BFggS8w9snUts67BSh3EqKpXLUm5UMHfD7ZBe9GhARjbNQMLJ1QD3Spr6REFY9Vw6y4jTvVwjNyKjFg0G5rucCjJ9a2Cf3sKKkgJfS2dWWEJB6gq7s7wSQ4gZzJYBHDnQ8sSg9a9kGKKz6Dcs
+                    - skipPreflight: false
+              getLatestBlockhash:
+                summary: getLatestBlockhash - Get latest blockhash
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getLatestBlockhash
+                  params:
+                    - commitment: finalized
+              getSignaturesForAddress:
+                summary: getSignaturesForAddress - Get transaction signatures
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignaturesForAddress
+                  params:
+                    - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - limit: 10
+      responses:
+        '200':
+          description: Successful JSON-RPC response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+              examples:
+                success_balance:
+                  summary: Successful balance response
+                  value:
+                    jsonrpc: '2.0'
+                    id: 1
+                    result:
+                      context:
+                        slot: 349392648
+                        apiVersion: 2.2.16
+                      value: 1000000
+                success_block:
+                  summary: Successful block response
+                  value:
+                    jsonrpc: '2.0'
+                    id: 1
+                    result:
+                      blockhash: 3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA
+                      previousBlockhash: mfcyqEXB3DnHXki6KjjmZck6YjmZLvpAByy2fj4nh6B
+                      parentSlot: 429
+                      blockHeight: 428
+                      blockTime: null
+                      transactions: []
+                error_response:
+                  summary: Error response example
+                  value:
+                    jsonrpc: '2.0'
+                    id: 1
+                    error:
+                      code: -32602
+                      message: Invalid params
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Unauthorized
+        '403':
+          description: Forbidden
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Forbidden
+        '429':
+          description: Too Many Requests
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Too Many Requests
+        '500':
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Internal Server Error
+      security:
+        - {}
+        - AuthHeader: []
+        - URLParameter: []
+
+components:
+  schemas:
+    JsonRpcRequest:
+      type: object
+      description: JSON-RPC 2.0 request object
+      required:
+        - jsonrpc
+        - id
+        - method
+        - params
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+            - '2.0'
+          description: JSON-RPC protocol version (must be 2.0)
+          example: '2.0'
+        id:
+          oneOf:
+            - type: string
+            - type: number
+          description: Request identifier that will be echoed back in the response
+          example: 1
+        method:
+          type: string
+          description: |
+            The name of the RPC method to call. See supported methods in the API description.
+
+            **Account Data Methods:**
+            - getAccountInfo
+            - getBalance
+            - getMultipleAccounts
+            - getProgramAccounts
+            - getTokenAccountBalance
+            - getTokenAccountsByDelegate
+            - getTokenAccountsByOwner
+            - getTokenLargestAccounts
+            - getTokenSupply
+
+            **Block Methods:**
+            - getBlock
+            - getBlocks
+            - getBlocksWithLimit
+            - getBlockHeight
+            - getBlockTime
+            - getBlockCommitment
+            - getBlockProduction
+
+            **Transaction Methods:**
+            - getTransaction
+            - getTransactionCount
+            - sendTransaction
+            - simulateTransaction
+
+            **Signature Methods:**
+            - getSignaturesForAddress
+            - getSignatureStatuses
+
+            **Cluster Methods:**
+            - getClusterNodes
+            - getEpochInfo
+            - getHealth
+            - getIdentity
+            - getInflationGovernor
+            - getInflationRate
+            - getInflationReward
+            - getLeaderSchedule
+            - getSlot
+            - getSlotLeader
+            - getSlotLeaders
+            - getSupply
+            - getVersion
+            - getVoteAccounts
+
+            **Utility Methods:**
+            - getGenesisHash
+            - getLatestBlockhash
+            - isBlockhashValid
+            - minimumLedgerSlot
+            - getRecentPerformanceSamples
+            - getRecentPrioritizationFees
+            - requestAirdrop
+          example: getBalance
+        params:
+          type: array
+          description: Method-specific parameters. The structure varies based on the method being called.
+          example:
+            - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+            - commitment: finalized
+
+    JsonRpcResponse:
+      oneOf:
+        - $ref: '#/components/schemas/JsonRpcSuccessResponse'
+        - $ref: '#/components/schemas/JsonRpcErrorResponse'
+      description: JSON-RPC 2.0 response (success or error)
+
+    JsonRpcSuccessResponse:
+      type: object
+      description: Successful JSON-RPC response
+      required:
+        - jsonrpc
+        - id
+        - result
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+            - '2.0'
+          example: '2.0'
+        id:
+          oneOf:
+            - type: string
+            - type: number
+          description: Request identifier from the original request
+          example: 1
+        result:
+          description: The result of the RPC method call. Structure depends on the method.
+          additionalProperties: true
+
+    JsonRpcErrorResponse:
+      type: object
+      description: Error JSON-RPC response
+      required:
+        - jsonrpc
+        - id
+        - error
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+            - '2.0'
+          example: '2.0'
+        id:
+          oneOf:
+            - type: string
+            - type: number
+          description: Request identifier from the original request
+          example: 1
+        error:
+          $ref: '#/components/schemas/JsonRpcError'
+
+    JsonRpcError:
+      type: object
+      description: JSON-RPC error object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: |
+            Numeric error code following JSON-RPC 2.0 specification:
+            - `-32700`: Parse error - Invalid JSON was received by the server
+            - `-32600`: Invalid Request - The JSON sent is not a valid Request object
+            - `-32601`: Method not found - The method does not exist or is not available
+            - `-32602`: Invalid params - Invalid method parameter(s)
+            - `-32603`: Internal error - Internal JSON-RPC error
+            - `-32005`: Too Many Requests - Rate limit exceeded
+            - `-32003`: Unauthorized - Authentication failed
+            - `-32015`: Transaction version not supported - Transaction version not supported
+          example: -32602
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid params
+        data:
+          type: object
+          description: Additional structured error information (optional, method-dependent)
+          additionalProperties: true
+
+    Commitment:
+      type: string
+      enum:
+        - processed
+        - confirmed
+        - finalized
+      description: |
+        The commitment level describes how finalized a block is at that point in time:
+
+        - `processed`: Query the most recent block which has reached 1 confirmation
+        - `confirmed`: Query the most recent block which has reached maximum-lockout on this node
+        - `finalized`: Query the most recent block which has been finalized by the cluster
+      default: finalized
+
+    Encoding:
+      type: string
+      enum:
+        - json
+        - jsonParsed
+        - base58
+        - base64
+      description: |
+        Encoding format for transaction/account data:
+
+        - `json`: Return data in JSON format
+        - `jsonParsed`: Attempt to use program-specific instruction parsers
+        - `base58`: Return data encoded in base58
+        - `base64`: Return data encoded in base64
+      default: json
+
+    TransactionDetails:
+      type: string
+      enum:
+        - full
+        - accounts
+        - signatures
+        - none
+      description: |
+        Level of transaction detail to return:
+
+        - `full`: Return complete transaction data with all metadata
+        - `accounts`: Return only signatures and annotated accounts list
+        - `signatures`: Return only transaction signatures
+        - `none`: Return no transaction data
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - authentication required or invalid
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Unauthorized
+
+    ForbiddenError:
+      description: Forbidden - insufficient permissions
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Forbidden
+
+    TooManyRequestsError:
+      description: Too Many Requests - rate limit exceeded
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Too Many Requests
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Internal Server Error
+
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Authorization header for API key authentication.
+
+        **Example:**
+        ```
+        Authorization: your-api-key-here
+        ```
+
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: |
+        API key passed as a URL query parameter for authentication.
+
+        **Example:**
+        ```
+        https://public.rpc.solanavibestation.com/?api_key=your-api-key-here
+        ```
+
+security:
+  - {}
+  - AuthHeader: []
+  - URLParameter: []
+
+tags:
+  - name: JSON-RPC
+    description: |
+      Solana JSON-RPC API endpoint supporting the full Solana RPC method specification.
+
+      All requests use the POST method with JSON-RPC 2.0 format. The method to call is specified
+      in the request body's "method" field.
+    externalDocs:
+      description: Solana RPC API Documentation
+      url: https://docs.solana.com/api/http
+
+externalDocs:
+  description: Solana RPC API Documentation
+  url: https://docs.solana.com/api/http
