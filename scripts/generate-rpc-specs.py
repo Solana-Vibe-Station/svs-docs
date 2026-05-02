@@ -268,9 +268,20 @@ def build_operation(method, base_note=ENDPOINT_NOTE, historical=False, websocket
 
 
 def build_paths(methods, base_path_prefix="", base_note=ENDPOINT_NOTE, historical=False, websocket=False):
+    """Build a paths map.
+
+    `base_path_prefix` joins to the method name to form each path key.
+    If the prefix ends with `#` (the historical case), no separator
+    slash is inserted — the method name is appended directly to make
+    a fragment-based path like `/historical#getBlock`. Otherwise we
+    insert `/` so paths look like `/getBlock`.
+    """
     paths = _OD()
     for m in methods:
-        path = f"{base_path_prefix}/{m['name']}"
+        if base_path_prefix.endswith("#"):
+            path = f"{base_path_prefix}{m['name']}"
+        else:
+            path = f"{base_path_prefix}/{m['name']}"
         paths[path] = _OD([("post", build_operation(m, base_note=base_note, historical=historical, websocket=websocket))])
     return paths
 
@@ -2156,10 +2167,15 @@ def assemble_spec(*, title, description, version, servers, tags, paths):
 def main(out_dir):
     solana_paths = build_paths(SOLANA_METHODS, base_path_prefix="", base_note=ENDPOINT_NOTE)
     # Historical methods all live at the single path /historical on the
-    # SVS server. OpenAPI requires unique (path, verb) keys, so we emit
-    # ONE consolidated operation and discriminate methods via the
-    # request-body examples dropdown.
-    historical_paths = build_historical_consolidated(HISTORICAL_METHODS)
+    # SVS server. OpenAPI 3.0 requires unique (path, verb) keys, so we
+    # use a fragment-based path key per method: `/historical#getBlock`,
+    # `/historical#getBlocks`, etc. The fragment is part of the path
+    # KEY in the spec but is stripped by every HTTP client before the
+    # request is sent (fragments are RFC 3986 client-side identifiers).
+    # Net effect: each method is its own embeddable OpenAPI operation,
+    # the actual HTTP request goes to POST /historical, and the per-
+    # method discriminator is the JSON-RPC `method` field in the body.
+    historical_paths = build_paths(HISTORICAL_METHODS, base_path_prefix="/historical#", base_note=HISTORICAL_ENDPOINT_NOTE, historical=True)
 
     solana_spec = assemble_spec(
         title="Solana Vibe Station RPC",
@@ -2180,14 +2196,18 @@ def main(out_dir):
             Historical Solana JSON-RPC 2.0 methods hosted by Solana Vibe Station,
             served from long-term ledger storage.
 
-            All historical methods POST to a single path: **`/historical`**
-            on the chosen SVS server. The method name is passed in the
-            JSON-RPC request body, exactly like the main Solana RPC. Use
-            the Test-It dropdown to switch between method-specific example
-            request bodies; the response payload also has a per-method
-            example so you can see what to expect.
+            **Every historical method POSTs to the same path: `/historical`.**
+            The method name is passed in the JSON-RPC request body exactly
+            like the main Solana RPC.
+
+            The path keys you see below (e.g. `/historical#getBlock`) include
+            an OpenAPI fragment so each method renders as its own embeddable
+            operation page. **The fragment is documentation-only — every
+            HTTP client strips fragments before sending, so the actual
+            request goes to `POST /historical` regardless of which page
+            you copy the example from.**
         """),
-        version="1.0.0", servers=HISTORICAL_SERVERS, tags=[{"name": "Historical RPC", "description": "All historical methods, dispatched via the JSON-RPC `method` field."}], paths=historical_paths,
+        version="1.0.0", servers=HISTORICAL_SERVERS, tags=HISTORICAL_TAGS, paths=historical_paths,
     )
 
     with open(f"{out_dir}/solana-rpc.yaml", "w") as f:
