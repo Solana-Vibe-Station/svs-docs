@@ -43,19 +43,10 @@ paths:
       - Block
       description: |
         Returns identity and transaction information about a historical block by slot, served from SVS's long-term ledger storage.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
         0. `slot` (required) — Slot number.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -88,9 +79,35 @@ paths:
                   example: getBlock
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: slot
+                      type: integer
+                      format: int64
+                      example: 178000000
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        transactionDetails:
+                          $ref: '#/components/schemas/TransactionDetails'
+                        rewards:
+                          type: boolean
+                        maxSupportedTransactionVersion:
+                          type: integer
+                          format: int64
             example:
               jsonrpc: '2.0'
               id: 1
@@ -163,20 +180,11 @@ paths:
       - Block
       description: |
         Returns confirmed blocks between two historical slots (inclusive).
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
         0. `startSlot` (required) — Start slot (inclusive).
         1. `endSlot` (optional) — End slot (inclusive).
-        2. `config` (optional) — Optional configuration object.
+        2. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -209,9 +217,30 @@ paths:
                   example: getBlocks
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 3
+                  items:
+                    anyOf:
+                    - title: startSlot
+                      type: integer
+                      format: int64
+                      example: 178000000
+                    - title: endSlot (optional)
+                      type: integer
+                      format: int64
+                      example: 178000010
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -258,20 +287,11 @@ paths:
       - Block
       description: |
         Returns up to `limit` confirmed historical blocks starting at `startSlot`.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
         0. `startSlot` (required) — Start slot.
         1. `limit` (required) — Number of blocks (max 500,000).
-        2. `config` (optional) — Optional configuration object.
+        2. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -304,9 +324,30 @@ paths:
                   example: getBlocksWithLimit
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 2
                   maxItems: 3
+                  items:
+                    anyOf:
+                    - title: startSlot
+                      type: integer
+                      format: int64
+                      example: 178000000
+                    - title: limit
+                      type: integer
+                      format: int64
+                      example: 10
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -358,15 +399,6 @@ paths:
       - Block
       description: |
         Returns the estimated Unix timestamp at which a historical block was produced.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
         0. `slot` (required) — Slot number.
@@ -402,9 +434,15 @@ paths:
                   example: getBlockTime
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: slot
+                      type: integer
+                      format: int64
+                      example: 178000000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -442,16 +480,7 @@ paths:
       summary: getFirstAvailableBlock — Lowest historical block
       tags:
       - Block
-      description: |
-        Returns the lowest slot number that the historical archive has data for.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
+      description: Returns the lowest slot number that the historical archive has data for.
       requestBody:
         required: true
         content:
@@ -523,18 +552,9 @@ paths:
       - Slots
       description: |
         Returns the highest slot number that the historical archive has data for.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -567,9 +587,22 @@ paths:
                   example: getSlot
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -608,19 +641,10 @@ paths:
       - Transactions
       description: |
         Returns historical signatures involving an address from SVS's long-term ledger storage.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -653,9 +677,41 @@ paths:
                   example: getSignaturesForAddress
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: pubkey
+                      type: string
+                      description: Base-58 encoded public key.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        limit:
+                          type: integer
+                          format: int64
+                          description: Maximum number of signatures to return (1–1000).
+                          example: 10
+                          minimum: 1
+                          maximum: 1000
+                        before:
+                          type: string
+                          description: Start the search before this signature (exclusive).
+                          example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                        until:
+                          type: string
+                          description: Search until this signature (inclusive).
+                          example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
             example:
               jsonrpc: '2.0'
               id: 1
@@ -723,19 +779,10 @@ paths:
       - Transactions
       description: |
         Returns confirmation status for historical signatures.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
         0. `signatures` (required) — Array of base-58 signatures.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -768,9 +815,31 @@ paths:
                   example: getSignatureStatuses
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: signatures
+                      type: array
+                      items:
+                        type: string
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        searchTransactionHistory:
+                          type: boolean
+                          description: If true, look up signatures in the long-term ledger archive (always true for the historical RPC).
+                          example: true
+                          default: true
             example:
               jsonrpc: '2.0'
               id: 1
@@ -845,19 +914,10 @@ paths:
       - Transactions
       description: |
         Returns full transaction data for a historical signature.
-
-        > **How to call this method**
-        >
-        > Historical Solana RPC requests POST to **`/historical`** on the chosen
-        > SVS server. The path shown above (e.g. `/historical/getBlock`) is a
-        > documentation grouping — it lets each historical method render as its
-        > own operation. The actual method dispatch happens via the `method`
-        > field in the request body.
-
         **Parameters**
 
         0. `signature` (required) — Base-58 transaction signature.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -890,9 +950,29 @@ paths:
                   example: getTransaction
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: signature
+                      type: string
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        maxSupportedTransactionVersion:
+                          type: integer
+                          format: int64
             example:
               jsonrpc: '2.0'
               id: 1

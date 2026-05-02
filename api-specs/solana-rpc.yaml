@@ -67,19 +67,10 @@ paths:
       - Account
       description: |
         Returns information associated with the account at the given pubkey, including its lamport balance, owner program, executable flag, rent epoch, and data.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -112,9 +103,42 @@ paths:
                   example: getAccountInfo
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: pubkey
+                      type: string
+                      description: Base-58 encoded public key.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        dataSlice:
+                          type: object
+                          description: Optional byte range of the account data to return. Use this to fetch only a slice of large accounts and save bandwidth.
+                          properties:
+                            offset:
+                              type: integer
+                              format: int64
+                              description: Number of bytes from the start of account data at which the slice begins.
+                              example: 0
+                            length:
+                              type: integer
+                              format: int64
+                              description: Number of bytes to include in the slice, starting from `offset`.
+                              example: 64
             example:
               jsonrpc: '2.0'
               id: 1
@@ -181,19 +205,10 @@ paths:
       - Account
       description: |
         Returns the lamport balance of the account at the provided pubkey.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -226,9 +241,26 @@ paths:
                   example: getBalance
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: pubkey
+                      type: string
+                      description: Base-58 encoded public key.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -282,19 +314,10 @@ paths:
       - Account
       description: |
         Returns account information for a list of pubkeys (max 100 per request).
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `pubkeys` (required) — Array of base-58 encoded pubkeys, max 100.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -327,9 +350,47 @@ paths:
                   example: getMultipleAccounts
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: pubkeys
+                      type: array
+                      items:
+                        type: string
+                        description: Account pubkey, base-58.
+                        example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                      description: Pubkeys to query, max 100 per request. Order is preserved in the response.
+                      maxItems: 100
+                      minItems: 1
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        dataSlice:
+                          type: object
+                          description: Optional byte range of the account data to return. Use this to fetch only a slice of large accounts and save bandwidth.
+                          properties:
+                            offset:
+                              type: integer
+                              format: int64
+                              description: Number of bytes from the start of account data at which the slice begins.
+                              example: 0
+                            length:
+                              type: integer
+                              format: int64
+                              description: Number of bytes to include in the slice, starting from `offset`.
+                              example: 64
             example:
               jsonrpc: '2.0'
               id: 1
@@ -393,19 +454,10 @@ paths:
       - Account
       description: |
         Returns all accounts owned by the provided program pubkey. Heavy query — prefer paginated alternatives where possible.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `programId` (required) — Program pubkey, base-58.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -438,9 +490,73 @@ paths:
                   example: getProgramAccounts
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: programId
+                      type: string
+                      description: Program pubkey, base-58.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        dataSlice:
+                          type: object
+                          properties:
+                            offset:
+                              type: integer
+                              format: int64
+                            length:
+                              type: integer
+                              format: int64
+                        filters:
+                          type: array
+                          items:
+                            type: object
+                            description: A filter that matches accounts whose data length equals `dataSize`, or whose data at `memcmp.offset` equals `memcmp.bytes`. Provide one of the two keys per filter.
+                            properties:
+                              dataSize:
+                                type: integer
+                                format: int64
+                                description: Exact account data size, in bytes. Match accounts whose data is exactly this many bytes long.
+                                example: 165
+                              memcmp:
+                                type: object
+                                description: Match accounts whose data at `offset` equals `bytes` (encoded per `encoding`).
+                                properties:
+                                  offset:
+                                    type: integer
+                                    format: int64
+                                    description: Byte offset into the account data.
+                                    example: 0
+                                  bytes:
+                                    type: string
+                                    description: Bytes to match against, base-58 or base-64.
+                                    example: 3Mc6vR
+                                  encoding:
+                                    type: string
+                                    description: Encoding for the `bytes` field.
+                                    example: base58
+                                    enum:
+                                    - base58
+                                    - base64
+                          description: Optional list of filters. Each filter narrows the result set; the server intersects them. Use `dataSize` to filter by account data length, and `memcmp` to filter by byte-equal at a given offset.
+                        withContext:
+                          type: boolean
+                          description: If true, wrap the response in a `{context, value}` envelope. Default is false (return the array directly).
+                          example: true
             example:
               jsonrpc: '2.0'
               id: 1
@@ -502,19 +618,10 @@ paths:
       - Account
       description: |
         Returns the token balance of an SPL token account.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `pubkey` (required) — Token account pubkey, base-58.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -547,9 +654,26 @@ paths:
                   example: getTokenAccountBalance
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: pubkey
+                      type: string
+                      description: Token account pubkey, base-58.
+                      example: 7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -604,20 +728,11 @@ paths:
       - Account
       description: |
         Returns all SPL token accounts whose delegate matches the provided pubkey.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `delegate` (required) — Delegate pubkey, base-58.
         1. `filter` (required) — Filter by mint or program id (one of).
-        2. `config` (optional) — Optional configuration object.
+        2. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -650,9 +765,40 @@ paths:
                   example: getTokenAccountsByDelegate
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 2
                   maxItems: 3
+                  items:
+                    anyOf:
+                    - title: delegate
+                      type: string
+                      description: Delegate pubkey, base-58.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: filter
+                      type: object
+                      description: Filter the result set. Provide exactly one of `mint` or `programId`.
+                      properties:
+                        mint:
+                          type: string
+                          description: Filter to a specific token mint address (base-58).
+                          example: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                        programId:
+                          type: string
+                          description: Filter to a token program (base-58). Typically the SPL Token or Token-2022 program id.
+                          example: TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
             example:
               jsonrpc: '2.0'
               id: 1
@@ -711,20 +857,11 @@ paths:
       - Account
       description: |
         Returns all SPL token accounts owned by the provided pubkey, optionally filtered by mint or token program.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `owner` (required) — Owner pubkey, base-58.
         1. `filter` (required) — Filter by mint or program id (one of).
-        2. `config` (optional) — Optional configuration object.
+        2. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -757,9 +894,40 @@ paths:
                   example: getTokenAccountsByOwner
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 2
                   maxItems: 3
+                  items:
+                    anyOf:
+                    - title: owner
+                      type: string
+                      description: Owner pubkey, base-58.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: filter
+                      type: object
+                      description: Filter the result set. Provide exactly one of `mint` or `programId`.
+                      properties:
+                        mint:
+                          type: string
+                          description: Filter to a specific token mint address (base-58).
+                          example: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                        programId:
+                          type: string
+                          description: Filter to a token program (base-58). Typically the SPL Token or Token-2022 program id.
+                          example: TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
             example:
               jsonrpc: '2.0'
               id: 1
@@ -818,19 +986,10 @@ paths:
       - Account
       description: |
         Returns the 20 largest token accounts for a given mint, sorted descending by balance.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `mint` (required) — Token mint pubkey, base-58.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -863,9 +1022,26 @@ paths:
                   example: getTokenLargestAccounts
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: mint
+                      type: string
+                      description: Token mint pubkey, base-58.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -935,19 +1111,10 @@ paths:
       - Account
       description: |
         Returns the total circulating supply of an SPL token mint.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `mint` (required) — Token mint pubkey, base-58.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -980,9 +1147,26 @@ paths:
                   example: getTokenSupply
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: mint
+                      type: string
+                      description: Token mint pubkey, base-58.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1036,19 +1220,10 @@ paths:
       - Block
       description: |
         Returns identity and transaction information about a confirmed block in the ledger.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `slot` (required) — Slot number to fetch.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -1081,9 +1256,39 @@ paths:
                   example: getBlock
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: slot
+                      type: integer
+                      format: int64
+                      description: Slot number.
+                      example: 416997240
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        transactionDetails:
+                          $ref: '#/components/schemas/TransactionDetails'
+                        rewards:
+                          type: boolean
+                          description: Include block rewards in the response. Default false.
+                          example: false
+                        maxSupportedTransactionVersion:
+                          type: integer
+                          format: int64
+                          description: 0 includes versioned transactions; omit for legacy-only.
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1161,18 +1366,9 @@ paths:
       - Block
       description: |
         Returns the current block height of the node.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -1205,9 +1401,22 @@ paths:
                   example: getBlockHeight
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1248,20 +1457,11 @@ paths:
       - Block
       description: |
         Returns a list of confirmed blocks between two slots (inclusive).
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `startSlot` (required) — Start slot (inclusive).
         1. `endSlot` (optional) — End slot (inclusive).
-        2. `config` (optional) — Optional configuration object.
+        2. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -1294,9 +1494,30 @@ paths:
                   example: getBlocks
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 3
+                  items:
+                    anyOf:
+                    - title: startSlot
+                      type: integer
+                      format: int64
+                      example: 416997230
+                    - title: endSlot (optional)
+                      type: integer
+                      format: int64
+                      example: 416997240
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1344,20 +1565,11 @@ paths:
       - Block
       description: |
         Returns up to `limit` confirmed blocks starting at `startSlot`.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `startSlot` (required) — Start slot.
         1. `limit` (required) — Maximum number of blocks (max 500,000).
-        2. `config` (optional) — Optional configuration object.
+        2. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -1390,9 +1602,31 @@ paths:
                   example: getBlocksWithLimit
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 2
                   maxItems: 3
+                  items:
+                    anyOf:
+                    - title: startSlot
+                      type: integer
+                      format: int64
+                      example: 416997230
+                    - title: limit
+                      type: integer
+                      format: int64
+                      example: 10
+                      maximum: 500000
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1444,15 +1678,6 @@ paths:
       - Block
       description: |
         Returns the estimated Unix timestamp at which a block was produced.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `slot` (required) — Slot number.
@@ -1488,9 +1713,15 @@ paths:
                   example: getBlockTime
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: slot
+                      type: integer
+                      format: int64
+                      example: 416997240
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1531,15 +1762,6 @@ paths:
       - Block
       description: |
         Returns the amount of cluster stake in lamports that has voted on a particular block.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `slot` (required) — Slot number.
@@ -1575,9 +1797,15 @@ paths:
                   example: getBlockCommitment
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: slot
+                      type: integer
+                      format: int64
+                      example: 416997240
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1659,18 +1887,9 @@ paths:
       - Block
       description: |
         Returns recent block production information from the current or previous epoch.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -1703,9 +1922,40 @@ paths:
                   example: getBlockProduction
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        identity:
+                          type: string
+                          description: Filter to a single validator identity (base-58 pubkey). Omit to include all validators.
+                          example: FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
+                        range:
+                          type: object
+                          description: Slot range to summarize block production over. Defaults to the current epoch when omitted.
+                          properties:
+                            firstSlot:
+                              type: integer
+                              format: int64
+                              description: First slot in the range, inclusive.
+                              example: 416997000
+                            lastSlot:
+                              type: integer
+                              format: int64
+                              description: Last slot in the range, inclusive.
+                              example: 416997240
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1778,16 +2028,7 @@ paths:
       summary: getClusterNodes — All cluster nodes
       tags:
       - Cluster
-      description: |
-        Returns information about all the nodes participating in the cluster.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns information about all the nodes participating in the cluster.
       requestBody:
         required: true
         content:
@@ -1890,18 +2131,9 @@ paths:
       - Cluster
       description: |
         Returns information about the current epoch, including absolute slot, slot index, and slots in the epoch.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -1934,9 +2166,22 @@ paths:
                   example: getEpochInfo
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -1998,16 +2243,7 @@ paths:
       summary: getEpochSchedule — Epoch schedule
       tags:
       - Cluster
-      description: |
-        Returns the genesis epoch schedule that this cluster is using.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns the genesis epoch schedule that this cluster is using.
       requestBody:
         required: true
         content:
@@ -2096,16 +2332,7 @@ paths:
       summary: getGenesisHash — Genesis hash
       tags:
       - Cluster
-      description: |
-        Returns the genesis hash of the cluster.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns the genesis hash of the cluster.
       requestBody:
         required: true
         content:
@@ -2175,16 +2402,7 @@ paths:
       summary: getHealth — Node health
       tags:
       - Cluster
-      description: |
-        Returns `ok` if the node is healthy, otherwise an error.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns `ok` if the node is healthy, otherwise an error.
       requestBody:
         required: true
         content:
@@ -2256,16 +2474,7 @@ paths:
       summary: getIdentity — Node identity
       tags:
       - Cluster
-      description: |
-        Returns the identity pubkey of the current node.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns the identity pubkey of the current node.
       requestBody:
         required: true
         content:
@@ -2338,16 +2547,7 @@ paths:
       summary: getVersion — Solana version
       tags:
       - Cluster
-      description: |
-        Returns the Solana software version running on the node.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns the Solana software version running on the node.
       requestBody:
         required: true
         content:
@@ -2426,19 +2626,10 @@ paths:
       - Fees
       description: |
         Returns the estimated fee in lamports for a base-64 encoded compiled message.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `message` (required) — Base-64 encoded compiled message.
-        1. `config` (optional) — Optional configuration object.
+        0. `message` (required) — Base-64 encoded compiled transaction message (the `Message`, not a full transaction). Used by `getFeeForMessage`.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -2471,9 +2662,26 @@ paths:
                   example: getFeeForMessage
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: message
+                      type: string
+                      description: Base-64 encoded compiled message.
+                      example: AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q==
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -2527,18 +2735,9 @@ paths:
       - Fees
       description: |
         Returns the latest blockhash and the last block height at which it will be valid.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -2571,9 +2770,22 @@ paths:
                   example: getLatestBlockhash
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -2631,19 +2843,10 @@ paths:
       - Fees
       description: |
         Returns whether a blockhash is still valid.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `blockhash` (required) — Base-58 blockhash.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -2676,9 +2879,25 @@ paths:
                   example: isBlockhashValid
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: blockhash
+                      type: string
+                      example: 3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -2730,19 +2949,10 @@ paths:
       - Fees
       description: |
         Returns the minimum balance (in lamports) required for an account of the given size to be rent-exempt.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `dataLength` (required) — Account data length in bytes.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -2775,9 +2985,26 @@ paths:
                   example: getMinimumBalanceForRentExemption
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: dataLength
+                      type: integer
+                      format: int64
+                      example: 165
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -2819,18 +3046,9 @@ paths:
       - Fees
       description: |
         Returns recent priority fees observed in the last 150 blocks, optionally constrained to accounts.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `addresses` (optional) — Optional list of account pubkeys to scope priority fees to.
+        0. `addresses` (optional) — Optional list of account pubkeys (max 128). Returned fees are scoped to recent blocks that referenced any of these accounts.
       requestBody:
         required: true
         content:
@@ -2863,9 +3081,18 @@ paths:
                   example: getRecentPrioritizationFees
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: addresses (optional)
+                      type: array
+                      items:
+                        type: string
+                        description: Account pubkey, base-58.
+                        example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                      description: Account pubkeys (max 128). Omit or pass an empty array for cluster-wide stats.
             example:
               jsonrpc: '2.0'
               id: 1
@@ -2918,19 +3145,10 @@ paths:
       - Transactions
       description: |
         Returns confirmed signatures for transactions involving the given address, newest first.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -2963,9 +3181,41 @@ paths:
                   example: getSignaturesForAddress
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: pubkey
+                      type: string
+                      description: Base-58 encoded public key.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        limit:
+                          type: integer
+                          format: int64
+                          description: Maximum number of signatures to return. Range 1–1000; default 1000.
+                          example: 10
+                          minimum: 1
+                          maximum: 1000
+                        before:
+                          type: string
+                          description: Start the search before this signature (exclusive). Use to paginate backwards in history.
+                          example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                        until:
+                          type: string
+                          description: Search until this signature (inclusive). Use to bound the search to a recent window.
+                          example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3035,19 +3285,10 @@ paths:
       - Transactions
       description: |
         Returns the statuses of a list of transaction signatures.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `signatures` (required) — Array of base-58 signatures.
-        1. `config` (optional) — Optional configuration object.
+        0. `signatures` (required) — Array of base-58 transaction signatures (max 256).
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3080,9 +3321,33 @@ paths:
                   example: getSignatureStatuses
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: signatures
+                      type: array
+                      items:
+                        type: string
+                        description: Transaction signature, base-58.
+                        example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                      description: Signatures to look up. Result array preserves order; missing signatures appear as null.
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        searchTransactionHistory:
+                          type: boolean
+                          description: If true, look up signatures in the long-term ledger archive in addition to recent slots. Slower but covers older transactions. Default false.
+                          example: true
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3159,19 +3424,10 @@ paths:
       - Transactions
       description: |
         Returns transaction details for a confirmed signature.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `signature` (required) — Base-58 transaction signature.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3204,9 +3460,33 @@ paths:
                   example: getTransaction
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: signature
+                      type: string
+                      description: Transaction signature, base-58.
+                      example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        maxSupportedTransactionVersion:
+                          type: integer
+                          format: int64
+                          description: Highest transaction version the client can handle. Set to 0 to receive versioned (v0) transactions; omit to receive only legacy (pre-v0) transactions.
+                          example: 0
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3280,18 +3560,9 @@ paths:
       - Transactions
       description: |
         Returns the cumulative count of transactions processed since the cluster started.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3324,9 +3595,22 @@ paths:
                   example: getTransactionCount
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3365,19 +3649,10 @@ paths:
       - Transactions
       description: |
         Submits a fully-signed, encoded transaction to the cluster for processing.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `transaction` (required) — Encoded signed transaction string.
-        1. `config` (optional) — Optional configuration object.
+        0. `transaction` (required) — Fully-signed transaction encoded per the chosen `encoding` (base-58 by default, base-64 recommended).
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3410,9 +3685,40 @@ paths:
                   example: sendTransaction
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: transaction
+                      type: string
+                      description: Fully-signed encoded transaction.
+                      example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        skipPreflight:
+                          type: boolean
+                          description: If true, skip the preflight transaction simulation that verifies signature, blockhash, and account state before submission. Default false.
+                          example: false
+                          default: false
+                        preflightCommitment:
+                          $ref: '#/components/schemas/Commitment'
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        maxRetries:
+                          type: integer
+                          format: int64
+                          description: Maximum number of retries when forwarding to the leader. Default unlimited (until blockhash expires).
+                          example: 0
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3453,19 +3759,10 @@ paths:
       - Transactions
       description: |
         Simulates a transaction without committing it. Useful for verifying account changes and estimating compute.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `transaction` (required) — Encoded transaction string.
-        1. `config` (optional) — Optional configuration object.
+        0. `transaction` (required) — Encoded transaction (signed or unsigned, depending on `sigVerify`).
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3498,9 +3795,51 @@ paths:
                   example: simulateTransaction
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: transaction
+                      type: string
+                      description: Encoded transaction string.
+                      example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        sigVerify:
+                          type: boolean
+                          description: If true, verify the transaction signatures during simulation. Cannot be combined with `replaceRecentBlockhash`. Default false.
+                          example: false
+                          default: false
+                        replaceRecentBlockhash:
+                          type: boolean
+                          description: If true, replace the transaction's recent blockhash with the latest known blockhash before simulating. Cannot be combined with `sigVerify`. Default false.
+                          example: true
+                          default: false
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        accounts:
+                          type: object
+                          description: Specifies which accounts to return after simulation. Use to inspect account state changes the transaction would produce.
+                          properties:
+                            addresses:
+                              type: array
+                              items:
+                                type: string
+                                description: Account pubkey, base-58.
+                                example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                              description: Pubkeys of accounts whose post-simulation state to return.
+                            encoding:
+                              $ref: '#/components/schemas/Encoding'
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3586,18 +3925,9 @@ paths:
       - Slots
       description: |
         Returns the slot that has reached the given commitment level.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3630,9 +3960,22 @@ paths:
                   example: getSlot
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3672,18 +4015,9 @@ paths:
       - Slots
       description: |
         Returns the current slot leader pubkey.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3716,9 +4050,22 @@ paths:
                   example: getSlotLeader
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3756,15 +4103,6 @@ paths:
       - Slots
       description: |
         Returns the slot leaders for a contiguous range of slots.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `startSlot` (required) — First slot.
@@ -3801,9 +4139,19 @@ paths:
                   example: getSlotLeaders
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 2
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: startSlot
+                      type: integer
+                      format: int64
+                      example: 416997230
+                    - title: limit
+                      type: integer
+                      format: int64
+                      example: 10
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3854,19 +4202,10 @@ paths:
       - Slots
       description: |
         Returns the leader schedule for an epoch.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `slot` (optional) — Slot to compute the epoch from (optional).
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3899,9 +4238,30 @@ paths:
                   example: getLeaderSchedule
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: slot (optional)
+                      type: integer
+                      format: int64
+                      nullable: true
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        identity:
+                          type: string
+                          description: Filter to a single validator identity (base-58 pubkey).
+                          example: FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
             example:
               jsonrpc: '2.0'
               id: 1
@@ -3953,18 +4313,9 @@ paths:
       - Stake
       description: |
         Returns the minimum delegation, in lamports, for a stake account.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -3997,9 +4348,22 @@ paths:
                   example: getStakeMinimumDelegation
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -4051,18 +4415,9 @@ paths:
       - Validators
       description: |
         Returns information about all vote accounts in the current and delinquent buckets.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -4095,9 +4450,35 @@ paths:
                   example: getVoteAccounts
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        votePubkey:
+                          type: string
+                          description: Filter to a single validator vote account, base-58.
+                          example: FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
+                        keepUnstakedDelinquents:
+                          type: boolean
+                          description: If true, include delinquent validators with zero active stake.
+                          example: false
+                        delinquentSlotDistance:
+                          type: integer
+                          format: int64
+                          description: Number of slots behind the cluster a validator must be to be considered delinquent. Default 128.
+                          example: 128
             example:
               jsonrpc: '2.0'
               id: 1
@@ -4155,18 +4536,9 @@ paths:
       - Inflation
       description: |
         Returns the current inflation governor (initial, terminal, taper, foundation, foundationTerm).
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -4199,9 +4571,22 @@ paths:
                   example: getInflationGovernor
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -4253,16 +4638,7 @@ paths:
       summary: getInflationRate — Inflation rate
       tags:
       - Inflation
-      description: |
-        Returns the specific inflation values for the current epoch.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns the specific inflation values for the current epoch.
       requestBody:
         required: true
         content:
@@ -4347,19 +4723,10 @@ paths:
       - Inflation
       description: |
         Returns the inflation rewards for a list of addresses for an epoch.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `addresses` (required) — Array of base-58 pubkeys.
-        1. `config` (optional) — Optional configuration object.
+        1. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -4392,9 +4759,34 @@ paths:
                   example: getInflationReward
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 1
                   maxItems: 2
+                  items:
+                    anyOf:
+                    - title: addresses
+                      type: array
+                      items:
+                        type: string
+                        description: Pubkey of the staked account or vote account, base-58.
+                        example: FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
+                      description: Pubkeys to fetch inflation rewards for. Each pubkey returns one entry in the result array, in order.
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        epoch:
+                          type: integer
+                          format: int64
+                          description: Specific epoch to query. Omit to use the latest finalized epoch.
+                          example: 964
             example:
               jsonrpc: '2.0'
               id: 1
@@ -4459,18 +4851,9 @@ paths:
       - Supply
       description: |
         Returns information about the total supply of SOL.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -4503,9 +4886,26 @@ paths:
                   example: getSupply
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        excludeNonCirculatingAccountsList:
+                          type: boolean
+                          description: If true, omit the (potentially long) `nonCirculatingAccounts` list from the response. Default false.
+                          example: true
             example:
               jsonrpc: '2.0'
               id: 1
@@ -4573,18 +4973,9 @@ paths:
       - Supply
       description: |
         Returns the 20 largest accounts by lamport balance, optionally filtered by circulating / non-circulating.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
-        0. `config` (optional) — Optional configuration object.
+        0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -4617,9 +5008,29 @@ paths:
                   example: getLargestAccounts
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
+                        filter:
+                          type: string
+                          description: Restrict the response to circulating or non-circulating accounts.
+                          example: circulating
+                          enum:
+                          - circulating
+                          - nonCirculating
             example:
               jsonrpc: '2.0'
               id: 1
@@ -4679,20 +5090,11 @@ paths:
       - Misc
       description: |
         Requests an airdrop of lamports to the given pubkey. Available on devnet/testnet only.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
         1. `lamports` (required) — Lamports to airdrop.
-        2. `config` (optional) — Optional configuration object.
+        2. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
       requestBody:
         required: true
         content:
@@ -4725,9 +5127,30 @@ paths:
                   example: requestAirdrop
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 2
                   maxItems: 3
+                  items:
+                    anyOf:
+                    - title: pubkey
+                      type: string
+                      description: Base-58 encoded public key.
+                      example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - title: lamports
+                      type: integer
+                      format: int64
+                      example: 1000000000
+                    - title: config (optional)
+                      type: object
+                      description: Optional configuration object. Every field is optional; omit the entire object to use defaults.
+                      properties:
+                        commitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+                          description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
+                          example: 416990000
             example:
               jsonrpc: '2.0'
               id: 1
@@ -4766,16 +5189,7 @@ paths:
       summary: minimumLedgerSlot — Lowest slot in ledger
       tags:
       - Misc
-      description: |
-        Returns the lowest slot the node has information about in its ledger.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
+      description: Returns the lowest slot the node has information about in its ledger.
       requestBody:
         required: true
         content:
@@ -4847,15 +5261,6 @@ paths:
       - Misc
       description: |
         Returns up to `limit` recent performance samples in reverse slot order.
-
-        > **How to call this method**
-        >
-        > All Solana JSON-RPC requests POST to the **root path** (`/`) of the
-        > chosen SVS RPC server. The path shown above (e.g. `/getBalance`) is a
-        > documentation grouping — it lets each method render as its own
-        > operation. The actual method dispatch happens via the `method` field
-        > in the request body.
-
         **Parameters**
 
         0. `limit` (optional) — Number of samples to return (1–720).
@@ -4891,9 +5296,15 @@ paths:
                   example: getRecentPerformanceSamples
                 params:
                   type: array
-                  description: Positional parameters. See each item below.
+                  description: Positional parameters. Each item below corresponds to one position in the array, in order.
                   minItems: 0
                   maxItems: 1
+                  items:
+                    anyOf:
+                    - title: limit (optional)
+                      type: integer
+                      format: int64
+                      example: 5
             example:
               jsonrpc: '2.0'
               id: 1

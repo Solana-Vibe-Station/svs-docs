@@ -104,14 +104,23 @@ def _params_schema(params):
             ("description", "No parameters."),
             ("maxItems", 0),
         ])
-    # JSON-RPC params are positional with per-position types. OpenAPI 3.0
-    # has no tuple validation, so we leave items unconstrained and document
-    # each positional item via the operation description.
+    # Each positional param gets its full schema (description, example,
+    # nested properties for object params) inside `items: anyOf`. anyOf
+    # (not oneOf) avoids strict validation errors when two adjacent
+    # positional params share a primitive type.
+    items_schemas = []
+    for p in params:
+        s = _OD()
+        s["title"] = p["name"] + ("" if p.get("required") else " (optional)")
+        for k, v in p["schema"].items():
+            s[k] = v
+        items_schemas.append(s)
     return _OD([
         ("type", "array"),
-        ("description", "Positional parameters. See each item below."),
+        ("description", "Positional parameters. Each item below corresponds to one position in the array, in order."),
         ("minItems", sum(1 for p in params if p.get("required"))),
         ("maxItems", len(params)),
+        ("items", _OD([("anyOf", items_schemas)])),
     ])
 
 
@@ -188,7 +197,9 @@ def _success_response(method_name, result_schema, result_example):
 def build_operation(method, base_note=ENDPOINT_NOTE):
     name = method["name"]
     summary = f"{name} — {method['summary']}"
-    description = method["description"].rstrip() + "\n\n" + base_note
+    # Per-operation description; the root-path note has been intentionally
+    # dropped — see info.description for that context.
+    description = method["description"].rstrip()
     if method.get("params"):
         description += "\n**Parameters**\n\n"
         for idx, p in enumerate(method["params"]):
@@ -452,10 +463,20 @@ def s_ref(ref):
     return _OD([("$ref", ref)])
 
 
-def config_param(extra_props=None, name="config", desc="Optional configuration object."):
+def config_param(extra_props=None, name="config", desc="Optional configuration object. Every field is optional; omit the entire object to use defaults.", required=False):
+    """Standard config-object positional parameter.
+
+    All Solana RPC config objects share `commitment` and `minContextSlot`.
+    Methods provide additional method-specific keys via `extra_props`. Every
+    nested property carries its own description and example so the schema
+    renders meaningfully in GitBook.
+    """
     props = OrderedDict([
         ("commitment", s_ref("#/components/schemas/Commitment")),
-        ("minContextSlot", s_int(desc="Minimum slot at which the request can be evaluated.", example=416990000)),
+        ("minContextSlot", s_int(
+            desc="Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.",
+            example=416990000,
+        )),
     ])
     if extra_props:
         for k, v in extra_props.items():
@@ -464,8 +485,46 @@ def config_param(extra_props=None, name="config", desc="Optional configuration o
         "name": name,
         "schema_doc": desc,
         "schema": s_obj(properties=props, desc=desc),
-        "required": False,
+        "required": required,
     }
+
+
+def data_slice_schema():
+    """Standard `dataSlice` field used by getAccountInfo, getMultipleAccounts, getProgramAccounts."""
+    return s_obj(
+        desc="Optional byte range of the account data to return. Use this to fetch only a slice of large accounts and save bandwidth.",
+        properties=OrderedDict([
+            ("offset", s_int(
+                desc="Number of bytes from the start of account data at which the slice begins.",
+                example=0,
+            )),
+            ("length", s_int(
+                desc="Number of bytes to include in the slice, starting from `offset`.",
+                example=64,
+            )),
+        ]),
+    )
+
+
+def memcmp_filter_schema():
+    """Filter object used by getProgramAccounts."""
+    return s_obj(
+        desc="A filter that matches accounts whose data length equals `dataSize`, or whose data at `memcmp.offset` equals `memcmp.bytes`. Provide one of the two keys per filter.",
+        properties=OrderedDict([
+            ("dataSize", s_int(
+                desc="Exact account data size, in bytes. Match accounts whose data is exactly this many bytes long.",
+                example=165,
+            )),
+            ("memcmp", s_obj(
+                desc="Match accounts whose data at `offset` equals `bytes` (encoded per `encoding`).",
+                properties=OrderedDict([
+                    ("offset", s_int(desc="Byte offset into the account data.", example=0)),
+                    ("bytes", s_string(desc="Bytes to match against, base-58 or base-64.", example="3Mc6vR")),
+                    ("encoding", s_string(desc="Encoding for the `bytes` field.", enum=["base58", "base64"], example="base58")),
+                ]),
+            )),
+        ]),
+    )
 
 
 def pubkey_param(name="pubkey", desc="Base-58 encoded public key.", example="83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"):
@@ -497,7 +556,7 @@ add_solana(
         pubkey_param(),
         config_param(extra_props={
             "encoding": s_ref("#/components/schemas/Encoding"),
-            "dataSlice": s_obj(properties={"offset": s_int(), "length": s_int()}, desc="Optional byte range of the account data to return."),
+            "dataSlice": data_slice_schema(),
         }),
     ],
     params_example=["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri", {"encoding": "base64", "commitment": "finalized"}],
@@ -527,10 +586,10 @@ add_solana(
     description="Returns account information for a list of pubkeys (max 100 per request).",
     params=[
         {"name": "pubkeys", "schema_doc": "Array of base-58 encoded pubkeys, max 100.",
-         "schema": s_arr(s_string(), desc="Pubkeys to query.", maxItems=100), "required": True},
+         "schema": s_arr(s_string(desc="Account pubkey, base-58.", example="83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"), desc="Pubkeys to query, max 100 per request. Order is preserved in the response.", maxItems=100, minItems=1), "required": True},
         config_param(extra_props={
             "encoding": s_ref("#/components/schemas/Encoding"),
-            "dataSlice": s_obj(properties={"offset": s_int(), "length": s_int()}),
+            "dataSlice": data_slice_schema(),
         }),
     ],
     params_example=[["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri", "11111111111111111111111111111111"], {"encoding": "base64"}],
@@ -550,8 +609,8 @@ add_solana(
         config_param(extra_props={
             "encoding": s_ref("#/components/schemas/Encoding"),
             "dataSlice": s_obj(properties={"offset": s_int(), "length": s_int()}),
-            "filters": s_arr(s_obj(additionalProperties=True), desc="Optional dataSize / memcmp filters."),
-            "withContext": s_bool(desc="Wrap response in a context block."),
+            "filters": s_arr(memcmp_filter_schema(), desc="Optional list of filters. Each filter narrows the result set; the server intersects them. Use `dataSize` to filter by account data length, and `memcmp` to filter by byte-equal at a given offset."),
+            "withContext": s_bool(desc="If true, wrap the response in a `{context, value}` envelope. Default is false (return the array directly).", example=True),
         }),
     ],
     params_example=["TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq", {"encoding": "base64", "filters": [{"dataSize": 165}]}],
@@ -581,7 +640,7 @@ add_solana(
     params=[
         pubkey_param(name="delegate", desc="Delegate pubkey, base-58."),
         {"name": "filter", "schema_doc": "Filter by mint or program id (one of).",
-         "schema": s_obj(properties={"mint": s_string(desc="Filter to a specific token mint."), "programId": s_string(desc="Filter to a token program.")}),
+         "schema": s_obj(desc="Filter the result set. Provide exactly one of `mint` or `programId`.", properties=OrderedDict([("mint", s_string(desc="Filter to a specific token mint address (base-58).", example="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")), ("programId", s_string(desc="Filter to a token program (base-58). Typically the SPL Token or Token-2022 program id.", example="TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq"))])),
          "required": True},
         config_param(extra_props={"encoding": s_ref("#/components/schemas/Encoding")}),
     ],
@@ -600,7 +659,7 @@ add_solana(
     params=[
         pubkey_param(name="owner", desc="Owner pubkey, base-58."),
         {"name": "filter", "schema_doc": "Filter by mint or program id (one of).",
-         "schema": s_obj(properties={"mint": s_string(), "programId": s_string()}), "required": True},
+         "schema": s_obj(desc="Filter the result set. Provide exactly one of `mint` or `programId`.", properties=OrderedDict([("mint", s_string(desc="Filter to a specific token mint address (base-58).", example="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")), ("programId", s_string(desc="Filter to a token program (base-58). Typically the SPL Token or Token-2022 program id.", example="TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq"))])), "required": True},
         config_param(extra_props={"encoding": s_ref("#/components/schemas/Encoding")}),
     ],
     params_example=["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri", {"programId": "TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq"}, {"encoding": "jsonParsed"}],
@@ -650,7 +709,7 @@ add_solana(
         config_param(extra_props={
             "encoding": s_ref("#/components/schemas/Encoding"),
             "transactionDetails": s_ref("#/components/schemas/TransactionDetails"),
-            "rewards": s_bool(),
+            "rewards": s_bool(desc="Include block rewards in the response. Default false.", example=False),
             "maxSupportedTransactionVersion": s_int(desc="0 includes versioned transactions; omit for legacy-only."),
         }),
     ],
@@ -731,8 +790,8 @@ add_solana(
     summary="Recent block production",
     description="Returns recent block production information from the current or previous epoch.",
     params=[config_param(extra_props={
-        "identity": s_string(desc="Filter to a single validator identity."),
-        "range": s_obj(properties={"firstSlot": s_int(), "lastSlot": s_int()}),
+        "identity": s_string(desc="Filter to a single validator identity (base-58 pubkey). Omit to include all validators.", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"),
+        "range": s_obj(desc="Slot range to summarize block production over. Defaults to the current epoch when omitted.", properties=OrderedDict([("firstSlot", s_int(desc="First slot in the range, inclusive.", example=416997000)), ("lastSlot", s_int(desc="Last slot in the range, inclusive.", example=416997240))])),
     })],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -835,7 +894,7 @@ add_solana(
     summary="Estimate fee for a message",
     description="Returns the estimated fee in lamports for a base-64 encoded compiled message.",
     params=[
-        {"name": "message", "schema_doc": "Base-64 encoded compiled message.", "schema": s_string(example="AQABA..."), "required": True},
+        {"name": "message", "schema_doc": "Base-64 encoded compiled transaction message (the `Message`, not a full transaction). Used by `getFeeForMessage`.", "schema": s_string(desc="Base-64 encoded compiled message.", example="AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q=="), "required": True},
         config_param(),
     ],
     params_example=["AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q==", {"commitment": "processed"}],
@@ -892,8 +951,8 @@ add_solana(
     name="getRecentPrioritizationFees", tag="Fees",
     summary="Recent prioritization fees",
     description="Returns recent priority fees observed in the last 150 blocks, optionally constrained to accounts.",
-    params=[{"name": "addresses", "schema_doc": "Optional list of account pubkeys to scope priority fees to.",
-             "schema": s_arr(s_string(), desc="Pubkeys, base-58."), "required": False}],
+    params=[{"name": "addresses", "schema_doc": "Optional list of account pubkeys (max 128). Returned fees are scoped to recent blocks that referenced any of these accounts.",
+             "schema": s_arr(s_string(desc="Account pubkey, base-58.", example="83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"), desc="Account pubkeys (max 128). Omit or pass an empty array for cluster-wide stats."), "required": False}],
     params_example=[["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"]],
     result_schema=s_arr(s_obj(properties=[("slot", s_int()), ("prioritizationFee", s_int())])),
     result_example=[{"slot": 416997125, "prioritizationFee": 0}, {"slot": 416997126, "prioritizationFee": 0}, {"slot": 416997127, "prioritizationFee": 1000}],
@@ -907,9 +966,9 @@ add_solana(
     params=[
         pubkey_param(),
         config_param(extra_props={
-            "limit": s_int(desc="Max signatures to return (1–1000).", example=10),
-            "before": s_string(desc="Start before this signature."),
-            "until": s_string(desc="Search until this signature."),
+            "limit": s_int(desc="Maximum number of signatures to return. Range 1–1000; default 1000.", example=10, minimum=1, maximum=1000),
+            "before": s_string(desc="Start the search before this signature (exclusive). Use to paginate backwards in history.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"),
+            "until": s_string(desc="Search until this signature (inclusive). Use to bound the search to a recent window.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"),
         }),
     ],
     params_example=["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri", {"limit": 10}],
@@ -927,8 +986,8 @@ add_solana(
     summary="Signature confirmation statuses",
     description="Returns the statuses of a list of transaction signatures.",
     params=[
-        {"name": "signatures", "schema_doc": "Array of base-58 signatures.", "schema": s_arr(s_string()), "required": True},
-        config_param(extra_props={"searchTransactionHistory": s_bool()}),
+        {"name": "signatures", "schema_doc": "Array of base-58 transaction signatures (max 256).", "schema": s_arr(s_string(desc="Transaction signature, base-58.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), desc="Signatures to look up. Result array preserves order; missing signatures appear as null."), "required": True},
+        config_param(extra_props={"searchTransactionHistory": s_bool(desc="If true, look up signatures in the long-term ledger archive in addition to recent slots. Slower but covers older transactions. Default false.", example=True)}),
     ],
     params_example=[["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"], {"searchTransactionHistory": True}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -947,8 +1006,11 @@ add_solana(
     summary="Transaction by signature",
     description="Returns transaction details for a confirmed signature.",
     params=[
-        {"name": "signature", "schema_doc": "Base-58 transaction signature.", "schema": s_string(), "required": True},
-        config_param(extra_props={"encoding": s_ref("#/components/schemas/Encoding"), "maxSupportedTransactionVersion": s_int()}),
+        {"name": "signature", "schema_doc": "Base-58 transaction signature.", "schema": s_string(desc="Transaction signature, base-58.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), "required": True},
+        config_param(extra_props=OrderedDict([
+            ("encoding", s_ref("#/components/schemas/Encoding")),
+            ("maxSupportedTransactionVersion", s_int(desc="Highest transaction version the client can handle. Set to 0 to receive versioned (v0) transactions; omit to receive only legacy (pre-v0) transactions.", example=0)),
+        ])),
     ],
     params_example=["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa", {"maxSupportedTransactionVersion": 0}],
     result_schema=s_obj(nullable=True, properties=[
@@ -975,12 +1037,12 @@ add_solana(
     summary="Submit a signed transaction",
     description="Submits a fully-signed, encoded transaction to the cluster for processing.",
     params=[
-        {"name": "transaction", "schema_doc": "Encoded signed transaction string.", "schema": s_string(), "required": True},
+        {"name": "transaction", "schema_doc": "Fully-signed transaction encoded per the chosen `encoding` (base-58 by default, base-64 recommended).", "schema": s_string(desc="Fully-signed encoded transaction.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), "required": True},
         config_param(extra_props={
-            "skipPreflight": s_bool(default=False),
+            "skipPreflight": s_bool(desc="If true, skip the preflight transaction simulation that verifies signature, blockhash, and account state before submission. Default false.", example=False, default=False),
             "preflightCommitment": s_ref("#/components/schemas/Commitment"),
             "encoding": s_ref("#/components/schemas/Encoding"),
-            "maxRetries": s_int(),
+            "maxRetries": s_int(desc="Maximum number of retries when forwarding to the leader. Default unlimited (until blockhash expires).", example=0),
         }),
     ],
     params_example=["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa", {"skipPreflight": False, "preflightCommitment": "processed"}],
@@ -993,12 +1055,12 @@ add_solana(
     summary="Simulate a transaction",
     description="Simulates a transaction without committing it. Useful for verifying account changes and estimating compute.",
     params=[
-        {"name": "transaction", "schema_doc": "Encoded transaction string.", "schema": s_string(), "required": True},
+        {"name": "transaction", "schema_doc": "Encoded transaction (signed or unsigned, depending on `sigVerify`).", "schema": s_string(desc="Encoded transaction string.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), "required": True},
         config_param(extra_props={
-            "sigVerify": s_bool(default=False),
-            "replaceRecentBlockhash": s_bool(default=False),
+            "sigVerify": s_bool(desc="If true, verify the transaction signatures during simulation. Cannot be combined with `replaceRecentBlockhash`. Default false.", example=False, default=False),
+            "replaceRecentBlockhash": s_bool(desc="If true, replace the transaction's recent blockhash with the latest known blockhash before simulating. Cannot be combined with `sigVerify`. Default false.", example=True, default=False),
             "encoding": s_ref("#/components/schemas/Encoding"),
-            "accounts": s_obj(properties={"addresses": s_arr(s_string()), "encoding": s_ref("#/components/schemas/Encoding")}),
+            "accounts": s_obj(desc="Specifies which accounts to return after simulation. Use to inspect account state changes the transaction would produce.", properties=OrderedDict([("addresses", s_arr(s_string(desc="Account pubkey, base-58.", example="83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"), desc="Pubkeys of accounts whose post-simulation state to return.")), ("encoding", s_ref("#/components/schemas/Encoding"))])),
         }),
     ],
     params_example=["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa", {"sigVerify": False, "replaceRecentBlockhash": True}],
@@ -1055,7 +1117,7 @@ add_solana(
     description="Returns the leader schedule for an epoch.",
     params=[
         {"name": "slot", "schema_doc": "Slot to compute the epoch from (optional).", "schema": s_int(nullable=True), "required": False},
-        config_param(extra_props={"identity": s_string()}),
+        config_param(extra_props={"identity": s_string(desc="Filter to a single validator identity (base-58 pubkey).", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR")}),
     ],
     params_example=[None, {"commitment": "finalized"}],
     result_schema=_OD([
@@ -1084,9 +1146,11 @@ add_solana(
     name="getVoteAccounts", tag="Validators",
     summary="Vote accounts",
     description="Returns information about all vote accounts in the current and delinquent buckets.",
-    params=[config_param(extra_props={
-        "votePubkey": s_string(), "keepUnstakedDelinquents": s_bool(), "delinquentSlotDistance": s_int(),
-    })],
+    params=[config_param(extra_props=OrderedDict([
+        ("votePubkey", s_string(desc="Filter to a single validator vote account, base-58.", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR")),
+        ("keepUnstakedDelinquents", s_bool(desc="If true, include delinquent validators with zero active stake.", example=False)),
+        ("delinquentSlotDistance", s_int(desc="Number of slots behind the cluster a validator must be to be considered delinquent. Default 128.", example=128)),
+    ]))],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(properties=[
         ("current", s_arr(s_obj(additionalProperties=True))),
@@ -1125,8 +1189,8 @@ add_solana(
     summary="Inflation rewards",
     description="Returns the inflation rewards for a list of addresses for an epoch.",
     params=[
-        {"name": "addresses", "schema_doc": "Array of base-58 pubkeys.", "schema": s_arr(s_string()), "required": True},
-        config_param(extra_props={"epoch": s_int()}),
+        {"name": "addresses", "schema_doc": "Array of base-58 pubkeys.", "schema": s_arr(s_string(desc="Pubkey of the staked account or vote account, base-58.", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"), desc="Pubkeys to fetch inflation rewards for. Each pubkey returns one entry in the result array, in order."), "required": True},
+        config_param(extra_props={"epoch": s_int(desc="Specific epoch to query. Omit to use the latest finalized epoch.", example=964)}),
     ],
     params_example=[["FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"], {"epoch": 964}],
     result_schema=s_arr(s_obj(nullable=True, properties=[
@@ -1141,7 +1205,7 @@ add_solana(
     name="getSupply", tag="Supply",
     summary="Total SOL supply",
     description="Returns information about the total supply of SOL.",
-    params=[config_param(extra_props={"excludeNonCirculatingAccountsList": s_bool()})],
+    params=[config_param(extra_props={"excludeNonCirculatingAccountsList": s_bool(desc="If true, omit the (potentially long) `nonCirculatingAccounts` list from the response. Default false.", example=True)})],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(required=["context", "value"], properties=[
         ("context", s_ref("#/components/schemas/Context")),
@@ -1157,7 +1221,7 @@ add_solana(
     name="getLargestAccounts", tag="Supply",
     summary="Largest SOL accounts",
     description="Returns the 20 largest accounts by lamport balance, optionally filtered by circulating / non-circulating.",
-    params=[config_param(extra_props={"filter": s_string(enum=["circulating", "nonCirculating"])})],
+    params=[config_param(extra_props={"filter": s_string(desc="Restrict the response to circulating or non-circulating accounts.", enum=["circulating", "nonCirculating"], example="circulating")})],
     params_example=[{"filter": "circulating"}],
     result_schema=s_obj(required=["context", "value"], properties=[
         ("context", s_ref("#/components/schemas/Context")),
@@ -1302,7 +1366,11 @@ add_historical(
     description="Returns historical signatures involving an address from SVS's long-term ledger storage.",
     params=[
         pubkey_param(),
-        config_param(extra_props={"limit": s_int(example=10), "before": s_string(), "until": s_string()}),
+        config_param(extra_props=OrderedDict([
+            ("limit", s_int(desc="Maximum number of signatures to return (1–1000).", example=10, minimum=1, maximum=1000)),
+            ("before", s_string(desc="Start the search before this signature (exclusive).", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")),
+            ("until", s_string(desc="Search until this signature (inclusive).", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")),
+        ])),
     ],
     params_example=["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri", {"limit": 10}],
     result_schema=s_arr(s_obj(properties=[
@@ -1320,7 +1388,7 @@ add_historical(
     description="Returns confirmation status for historical signatures.",
     params=[
         {"name": "signatures", "schema_doc": "Array of base-58 signatures.", "schema": s_arr(s_string()), "required": True},
-        config_param(extra_props={"searchTransactionHistory": s_bool(default=True)}),
+        config_param(extra_props={"searchTransactionHistory": s_bool(desc="If true, look up signatures in the long-term ledger archive (always true for the historical RPC).", example=True, default=True)}),
     ],
     params_example=[["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"], {"searchTransactionHistory": True}],
     result_schema=s_obj(required=["context", "value"], properties=[
