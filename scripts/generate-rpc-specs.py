@@ -594,7 +594,7 @@ def add_solana(**method):
 add_solana(
     name="getAccountInfo", tag="Account",
     summary="Account info for a single pubkey",
-    description="Returns information associated with the account at the given pubkey, including its lamport balance, owner program, executable flag, rent epoch, and data.",
+    description="Returns all information associated with the account of provided Pubkey",
     params=[
         pubkey_param(),
         config_param(extra_props={
@@ -613,7 +613,7 @@ add_solana(
 add_solana(
     name="getBalance", tag="Account",
     summary="Lamport balance for a pubkey",
-    description="Returns the lamport balance of the account at the provided pubkey.",
+    description="Returns the lamport balance of the account of provided Pubkey. The balance is returned in lamports, where 1 SOL = 1,000,000,000 lamports.",
     params=[pubkey_param(), config_param()],
     params_example=["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri", {"commitment": "finalized"}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -626,7 +626,7 @@ add_solana(
 add_solana(
     name="getMultipleAccounts", tag="Account",
     summary="Account info for many pubkeys",
-    description="Returns account information for a list of pubkeys (max 100 per request).",
+    description="Returns account information for multiple accounts in a single request. This is more efficient than making multiple getAccountInfo calls when you need to fetch data from several accounts at once. You can request up to 100 accounts per call.",
     params=[
         {"name": "pubkeys", "schema_doc": "Array of base-58 encoded pubkeys, max 100.",
          "schema": s_arr(s_string(desc="Account pubkey, base-58.", example="83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"), desc="Pubkeys to query, max 100 per request. Order is preserved in the response.", maxItems=100, minItems=1), "required": True},
@@ -646,7 +646,7 @@ add_solana(
 add_solana(
     name="getProgramAccounts", tag="Account",
     summary="All accounts owned by a program",
-    description="Returns all accounts owned by the provided program pubkey. Heavy query — prefer paginated alternatives where possible.",
+    description="Returns all accounts owned by a given program. This method is useful for finding all accounts associated with a specific program, such as all token accounts for a particular token mint or all accounts created by a custom program. You can apply filters to narrow down the results. SPL/SPL2022 Token Program Requirements: When querying SPL or SPL2022 token programs, the configuration object must include: filters (array, required): An array of filters to apply to the accounts. Must contain the dataSize filter. Must be one of the known lengths for SPL/SPL2022 program accounts (mint= 82 , token= 165 ) or a larger value when filtering for SPL2022 accounts with extensions. When filtering for multisig accounts, the size must be 355 for accounts of both programs. When filtering for token accounts : Must contain at least one memcmp filter. Only the mint ( offset = 0 , 32 bytes data length) and the owner ( offset = 32 , 32 bytes data length) filters are supported.",
     params=[
         pubkey_param(name="programId", desc="Program pubkey, base-58."),
         config_param(extra_props={
@@ -666,7 +666,7 @@ add_solana(
 add_solana(
     name="getTokenAccountBalance", tag="Account",
     summary="Token account balance",
-    description="Returns the token balance of an SPL token account.",
+    description="Returns the token balance of an SPL Token account.",
     params=[pubkey_param(desc="Token account pubkey, base-58.", example="7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi"), config_param()],
     params_example=["7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi", {"commitment": "finalized"}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -679,7 +679,7 @@ add_solana(
 add_solana(
     name="getTokenAccountsByDelegate", tag="Account",
     summary="Token accounts by delegate",
-    description="Returns all SPL token accounts whose delegate matches the provided pubkey.",
+    description="Returns all SPL Token accounts by approved delegate. This method is essential for finding token accounts where a specific address has been granted delegation permissions to spend tokens on behalf of the owner.",
     params=[
         pubkey_param(name="delegate", desc="Delegate pubkey, base-58."),
         {"name": "filter", "schema_doc": "Filter by mint or program id (one of).",
@@ -698,7 +698,7 @@ add_solana(
 add_solana(
     name="getTokenAccountsByOwner", tag="Account",
     summary="Token accounts by owner",
-    description="Returns all SPL token accounts owned by the provided pubkey, optionally filtered by mint or token program.",
+    description="Returns all SPL Token accounts by token owner.",
     params=[
         pubkey_param(name="owner", desc="Owner pubkey, base-58."),
         {"name": "filter", "schema_doc": "Filter by mint or program id (one of).",
@@ -716,7 +716,7 @@ add_solana(
 add_solana(
     name="getTokenLargestAccounts", tag="Account",
     summary="20 largest accounts of a token",
-    description="Returns the 20 largest token accounts for a given mint, sorted descending by balance.",
+    description="Returns the 20 largest accounts of a particular SPL Token type. This method is essential for analyzing token distribution, identifying whale accounts, and understanding token concentration patterns.",
     params=[pubkey_param(name="mint", desc="Token mint pubkey, base-58."), config_param()],
     params_example=["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -732,7 +732,7 @@ add_solana(
 add_solana(
     name="getTokenSupply", tag="Account",
     summary="Total supply of a token",
-    description="Returns the total circulating supply of an SPL token mint.",
+    description="Returns the total supply of an SPL Token type. This method is essential for understanding token economics, monitoring token distribution, and tracking token supply changes over time.",
     params=[pubkey_param(name="mint", desc="Token mint pubkey, base-58."), config_param()],
     params_example=["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -746,7 +746,7 @@ add_solana(
 add_solana(
     name="getBlock", tag="Block",
     summary="Block by slot",
-    description="Returns identity and transaction information about a confirmed block in the ledger.",
+    description="Returns identity and transaction information about a confirmed block in the ledger. Provides detailed block data including all transactions and their metadata.",
     params=[
         {"name": "slot", "schema_doc": "Slot number to fetch.", "schema": s_int(desc="Slot number.", example=416997240), "required": True},
         config_param(extra_props={
@@ -770,7 +770,7 @@ add_solana(
 add_solana(
     name="getBlockHeight", tag="Block",
     summary="Current block height",
-    description="Returns the current block height of the node.",
+    description="Returns the current block height of the node. Block height is the number of blocks that have been produced since the genesis block. This is different from slot numbers, as blocks represent confirmed batches of transactions.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_int(desc="Current block height.", example=395090168),
@@ -780,7 +780,7 @@ add_solana(
 add_solana(
     name="getBlocks", tag="Block",
     summary="Confirmed blocks in a range",
-    description="Returns a list of confirmed blocks between two slots (inclusive).",
+    description="Returns a list of confirmed blocks between two slots",
     params=[
         {"name": "startSlot", "schema_doc": "Start slot (inclusive).", "schema": s_int(example=416997230), "required": True},
         {"name": "endSlot", "schema_doc": "End slot (inclusive).", "schema": s_int(example=416997240), "required": False},
@@ -794,7 +794,7 @@ add_solana(
 add_solana(
     name="getBlocksWithLimit", tag="Block",
     summary="Confirmed blocks starting at slot",
-    description="Returns up to `limit` confirmed blocks starting at `startSlot`.",
+    description="Returns a list of confirmed blocks starting at the given slot. This method provides an efficient way to retrieve a range of sequential block slots, which is useful for block explorers, analytics tools, and applications that need to process historical blockchain data in batches. Important : The limit must be no more than 500,000 blocks higher than the start_slot.",
     params=[
         {"name": "startSlot", "schema_doc": "Start slot.", "schema": s_int(example=416997230), "required": True},
         {"name": "limit", "schema_doc": "Maximum number of blocks (max 500,000).", "schema": s_int(example=10, maximum=500000), "required": True},
@@ -808,7 +808,7 @@ add_solana(
 add_solana(
     name="getBlockTime", tag="Block",
     summary="Estimated production time of a block",
-    description="Returns the estimated Unix timestamp at which a block was produced.",
+    description="Returns the estimated production time of a block. Each validator reports their UTC time to the ledger on a regular interval by intermittently adding a timestamp to a Vote for a particular block. A requested block's time is calculated from the stake-weighted mean of the Vote timestamps in a set of recent blocks recorded on the ledger.",
     params=[{"name": "slot", "schema_doc": "Slot number.", "schema": s_int(example=416997240), "required": True}],
     params_example=[378967388],
     result_schema=s_int(nullable=True, desc="Unix timestamp seconds, or null if unavailable."),
@@ -818,7 +818,7 @@ add_solana(
 add_solana(
     name="getBlockCommitment", tag="Block",
     summary="Commitment for a block",
-    description="Returns the amount of cluster stake in lamports that has voted on a particular block.",
+    description="Returns commitment for particular block. This method provides information about the cluster stake that has voted on a specific block at each depth.",
     params=[{"name": "slot", "schema_doc": "Slot number.", "schema": s_int(example=416997240), "required": True}],
     params_example=[378967388],
     result_schema=s_obj(properties=[
@@ -831,7 +831,7 @@ add_solana(
 add_solana(
     name="getBlockProduction", tag="Block",
     summary="Recent block production",
-    description="Returns recent block production information from the current or previous epoch.",
+    description="Returns recent block production information from the current or previous epoch",
     params=[config_param(extra_props={
         "identity": s_string(desc="Filter to a single validator identity (base-58 pubkey). Omit to include all validators.", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"),
         "range": s_obj(desc="Slot range to summarize block production over. Defaults to the current epoch when omitted.", properties=OrderedDict([("firstSlot", s_int(desc="First slot in the range, inclusive.", example=416997000)), ("lastSlot", s_int(desc="Last slot in the range, inclusive.", example=416997240))])),
@@ -851,7 +851,7 @@ add_solana(
 add_solana(
     name="getClusterNodes", tag="Cluster",
     summary="All cluster nodes",
-    description="Returns information about all the nodes participating in the cluster.",
+    description="Returns information about all the nodes participating in the cluster. This includes details about each node's network addresses, version, and configuration parameters.",
     params=[],
     params_example=[],
     result_schema=s_arr(s_obj(properties={
@@ -865,7 +865,7 @@ add_solana(
 add_solana(
     name="getEpochInfo", tag="Cluster",
     summary="Current epoch info",
-    description="Returns information about the current epoch, including absolute slot, slot index, and slots in the epoch.",
+    description="Returns information about the current epoch including the current slot, block height, epoch number, slot index within the epoch, total slots in the epoch, and transaction count.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(properties=[
@@ -892,7 +892,7 @@ add_solana(
 add_solana(
     name="getGenesisHash", tag="Cluster",
     summary="Genesis hash",
-    description="Returns the genesis hash of the cluster.",
+    description="Returns the genesis hash of the Solana network. The genesis hash is a unique identifier for the blockchain network that represents the initial state of the ledger.",
     params=[],
     params_example=[],
     result_schema=s_string(desc="Base-58 genesis hash."),
@@ -902,7 +902,7 @@ add_solana(
 add_solana(
     name="getHealth", tag="Cluster",
     summary="Node health",
-    description="Returns `ok` if the node is healthy, otherwise an error.",
+    description="Returns the current health of the node. A healthy node is one that is within 25 slots of the latest cluster confirmed slot. This method is useful for monitoring node synchronization status and determining if the node is keeping up with the network.",
     params=[],
     params_example=[],
     result_schema=s_string(enum=["ok"], desc="Node health status."),
@@ -912,7 +912,7 @@ add_solana(
 add_solana(
     name="getIdentity", tag="Cluster",
     summary="Node identity",
-    description="Returns the identity pubkey of the current node.",
+    description="Returns the identity pubkey for the current node. The identity pubkey uniquely identifies the validator node in the Solana network.",
     params=[],
     params_example=[],
     result_schema=s_obj(properties=[("identity", s_string())]),
@@ -922,7 +922,7 @@ add_solana(
 add_solana(
     name="getVersion", tag="Cluster",
     summary="Solana version",
-    description="Returns the Solana software version running on the node.",
+    description="Returns the current Solana version information running on the node.",
     params=[],
     params_example=[],
     result_schema=s_obj(properties=[
@@ -935,7 +935,7 @@ add_solana(
 add_solana(
     name="getFeeForMessage", tag="Fees",
     summary="Estimate fee for a message",
-    description="Returns the estimated fee in lamports for a base-64 encoded compiled message.",
+    description="Get the fee the network will charge for a particular Message. Version Restriction : This method is only available in solana-core v1.9 or newer. Please use getFees for solana-core v1.8 and below.",
     params=[
         {"name": "message", "schema_doc": "Base-64 encoded compiled transaction message (the `Message`, not a full transaction). Used by `getFeeForMessage`.", "schema": s_string(desc="Base-64 encoded compiled message.", example="AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q=="), "required": True},
         config_param(),
@@ -951,7 +951,7 @@ add_solana(
 add_solana(
     name="getLatestBlockhash", tag="Fees",
     summary="Latest blockhash",
-    description="Returns the latest blockhash and the last block height at which it will be valid.",
+    description="Returns the latest blockhash. This is essential for creating transactions as the blockhash is required for transaction validity.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -964,7 +964,7 @@ add_solana(
 add_solana(
     name="isBlockhashValid", tag="Fees",
     summary="Check blockhash validity",
-    description="Returns whether a blockhash is still valid.",
+    description="Returns whether a blockhash is still valid or not.",
     params=[
         {"name": "blockhash", "schema_doc": "Base-58 blockhash.", "schema": s_string(example="3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA"), "required": True},
         config_param(),
@@ -980,7 +980,7 @@ add_solana(
 add_solana(
     name="getMinimumBalanceForRentExemption", tag="Fees",
     summary="Min balance for rent exemption",
-    description="Returns the minimum balance (in lamports) required for an account of the given size to be rent-exempt.",
+    description="Returns the minimum balance required to make an account rent exempt on the Solana blockchain. Rent is a mechanism on Solana that ensures efficient usage of blockchain resources by requiring accounts to maintain a minimum balance proportional to the amount of data they store. Accounts that maintain this minimum balance are \"rent exempt\" and will never have their balance reduced by the network.",
     params=[
         {"name": "dataLength", "schema_doc": "Account data length in bytes.", "schema": s_int(example=165), "required": True},
         config_param(),
@@ -993,7 +993,7 @@ add_solana(
 add_solana(
     name="getRecentPrioritizationFees", tag="Fees",
     summary="Recent prioritization fees",
-    description="Returns recent priority fees observed in the last 150 blocks, optionally constrained to accounts.",
+    description="Returns a list of prioritization fees from recent blocks to help estimate appropriate priority fees for transactions. The method returns data from up to 150 recent blocks stored in the node's prioritization-fee cache. When account addresses are provided, the response reflects the fees needed to land a transaction that locks all specified accounts as writable, helping estimate fees for transactions with account contention. This data is essential for applications that need to dynamically adjust priority fees based on current network conditions, ensuring transactions are processed quickly without overpaying. The fees are expressed in microlamports per compute unit, where 1 microlamport = 0.000001 lamports.",
     params=[{"name": "addresses", "schema_doc": "Optional list of account pubkeys (max 128). Returned fees are scoped to recent blocks that referenced any of these accounts.",
              "schema": s_arr(s_string(desc="Account pubkey, base-58.", example="83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"), desc="Account pubkeys (max 128). Omit or pass an empty array for cluster-wide stats."), "required": False}],
     params_example=[["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"]],
@@ -1005,7 +1005,7 @@ add_solana(
 add_solana(
     name="getSignaturesForAddress", tag="Transactions",
     summary="Signatures involving an address",
-    description="Returns confirmed signatures for transactions involving the given address, newest first.",
+    description="Returns signatures for confirmed transactions that include the given address in their accountKeys list. Returns signatures backwards in time from the provided signature or most recent confirmed block. This method is essential for transaction history, wallet activity feeds, and building transaction explorers.",
     params=[
         pubkey_param(),
         config_param(extra_props={
@@ -1027,7 +1027,7 @@ add_solana(
 add_solana(
     name="getSignatureStatuses", tag="Transactions",
     summary="Signature confirmation statuses",
-    description="Returns the statuses of a list of transaction signatures.",
+    description="Returns the statuses of a list of transaction signatures. This method is essential for checking whether transactions have been confirmed, failed, or are still processing. It's commonly used by wallets and dApps to monitor transaction status and provide real-time feedback to users. You can check up to 256 signatures in a single request.",
     params=[
         {"name": "signatures", "schema_doc": "Array of base-58 transaction signatures (max 256).", "schema": s_arr(s_string(desc="Transaction signature, base-58.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), desc="Signatures to look up. Result array preserves order; missing signatures appear as null."), "required": True},
         config_param(extra_props={"searchTransactionHistory": s_bool(desc="If true, look up signatures in the long-term ledger archive in addition to recent slots. Slower but covers older transactions. Default false.", example=True)}),
@@ -1047,7 +1047,7 @@ add_solana(
 add_solana(
     name="getTransaction", tag="Transactions",
     summary="Transaction by signature",
-    description="Returns transaction details for a confirmed signature.",
+    description="Returns transaction details for a confirmed transaction signature. Provides comprehensive information about the transaction including its status, fees, logs, and account changes. This method is essential for transaction explorers, wallets, and dApps that need to analyze transaction execution details. Important : For most modern Solana transactions, you must include maxSupportedTransactionVersion: 0 in the request parameters, otherwise the request will fail with an error if the transaction is a versioned transaction.",
     params=[
         {"name": "signature", "schema_doc": "Base-58 transaction signature.", "schema": s_string(desc="Transaction signature, base-58.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), "required": True},
         config_param(extra_props=OrderedDict([
@@ -1068,7 +1068,7 @@ add_solana(
 add_solana(
     name="getTransactionCount", tag="Transactions",
     summary="Total transaction count",
-    description="Returns the cumulative count of transactions processed since the cluster started.",
+    description="Returns the current transaction count from the ledger. This method provides a cumulative count of all transactions that have been processed by the Solana network since genesis.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_int(),
@@ -1078,7 +1078,7 @@ add_solana(
 add_solana(
     name="sendTransaction", tag="Transactions",
     summary="Submit a signed transaction",
-    description="Submits a fully-signed, encoded transaction to the cluster for processing.",
+    description="Submits a signed transaction to the cluster for processing and returns the transaction signature if successful. This is the primary method for executing transactions on the Solana network. The transaction must be fully signed and serialized before submission. The method provides various options for controlling transaction processing behavior, including preflight checks, retry logic, and encoding formats. Transactions that fail preflight checks or network validation will return detailed error information.",
     params=[
         {"name": "transaction", "schema_doc": "Fully-signed transaction encoded per the chosen `encoding` (base-58 by default, base-64 recommended).", "schema": s_string(desc="Fully-signed encoded transaction.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), "required": True},
         config_param(extra_props={
@@ -1096,7 +1096,7 @@ add_solana(
 add_solana(
     name="simulateTransaction", tag="Transactions",
     summary="Simulate a transaction",
-    description="Simulates a transaction without committing it. Useful for verifying account changes and estimating compute.",
+    description="Simulates sending a transaction to get the effects that would occur if the transaction was committed. The simulation runs against the current state of the blockchain and provides detailed information including logs, account changes, compute units consumed, and any errors that would occur during execution.",
     params=[
         {"name": "transaction", "schema_doc": "Encoded transaction (signed or unsigned, depending on `sigVerify`).", "schema": s_string(desc="Encoded transaction string.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"), "required": True},
         config_param(extra_props={
@@ -1124,7 +1124,7 @@ add_solana(
 add_solana(
     name="getSlot", tag="Slots",
     summary="Current slot",
-    description="Returns the slot that has reached the given commitment level.",
+    description="Returns the slot that has reached the given or default commitment level.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_int(example=416997240),
@@ -1134,7 +1134,7 @@ add_solana(
 add_solana(
     name="getSlotLeader", tag="Slots",
     summary="Current slot leader",
-    description="Returns the current slot leader pubkey.",
+    description="Returns the current slot leader.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_string(),
@@ -1144,7 +1144,7 @@ add_solana(
 add_solana(
     name="getSlotLeaders", tag="Slots",
     summary="Slot leaders for a range",
-    description="Returns the slot leaders for a contiguous range of slots.",
+    description="Returns the slot leaders for a given slot range. This method provides the sequence of validators scheduled to produce blocks for consecutive slots, which is essential for understanding the upcoming block production schedule on the Solana network.",
     params=[
         {"name": "startSlot", "schema_doc": "First slot.", "schema": s_int(example=416997230), "required": True},
         {"name": "limit", "schema_doc": "Number of leaders to return (1–5000).", "schema": s_int(example=10), "required": True},
@@ -1157,7 +1157,7 @@ add_solana(
 add_solana(
     name="getLeaderSchedule", tag="Slots",
     summary="Leader schedule for an epoch",
-    description="Returns the leader schedule for an epoch.",
+    description="Returns the leader schedule for an epoch, showing which validator is assigned to each slot.",
     params=[
         {"name": "slot", "schema_doc": "Slot to compute the epoch from (optional).", "schema": s_int(nullable=True), "required": False},
         config_param(extra_props={"identity": s_string(desc="Filter to a single validator identity (base-58 pubkey).", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR")}),
@@ -1175,7 +1175,7 @@ add_solana(
 add_solana(
     name="getStakeMinimumDelegation", tag="Stake",
     summary="Minimum stake delegation",
-    description="Returns the minimum delegation, in lamports, for a stake account.",
+    description="Returns the minimum delegation amount required for staking SOL on the Solana network, expressed in lamports.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -1188,7 +1188,7 @@ add_solana(
 add_solana(
     name="getVoteAccounts", tag="Validators",
     summary="Vote accounts",
-    description="Returns information about all vote accounts in the current and delinquent buckets.",
+    description="Returns the account info and associated stake for all the voting accounts in the current bank.",
     params=[config_param(extra_props=OrderedDict([
         ("votePubkey", s_string(desc="Filter to a single validator vote account, base-58.", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR")),
         ("keepUnstakedDelinquents", s_bool(desc="If true, include delinquent validators with zero active stake.", example=False)),
@@ -1205,7 +1205,7 @@ add_solana(
 add_solana(
     name="getInflationGovernor", tag="Inflation",
     summary="Inflation governor",
-    description="Returns the current inflation governor (initial, terminal, taper, foundation, foundationTerm).",
+    description="Returns the current inflation governor, which contains the parameters that control Solana's inflation schedule including initial rates, taper rates, terminal rates, and foundation allocation.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(properties=[
@@ -1218,7 +1218,7 @@ add_solana(
 add_solana(
     name="getInflationRate", tag="Inflation",
     summary="Inflation rate",
-    description="Returns the specific inflation values for the current epoch.",
+    description="Returns the specific inflation values for the current epoch, including total inflation and the breakdown between validator rewards and foundation allocation.",
     params=[],
     params_example=[],
     result_schema=s_obj(properties=[
@@ -1230,7 +1230,7 @@ add_solana(
 add_solana(
     name="getInflationReward", tag="Inflation",
     summary="Inflation rewards",
-    description="Returns the inflation rewards for a list of addresses for an epoch.",
+    description="Returns the inflation/staking reward for a list of addresses for an epoch.",
     params=[
         {"name": "addresses", "schema_doc": "Array of base-58 pubkeys.", "schema": s_arr(s_string(desc="Pubkey of the staked account or vote account, base-58.", example="FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"), desc="Pubkeys to fetch inflation rewards for. Each pubkey returns one entry in the result array, in order."), "required": True},
         config_param(extra_props={"epoch": s_int(desc="Specific epoch to query. Omit to use the latest finalized epoch.", example=964)}),
@@ -1247,7 +1247,7 @@ add_solana(
 add_solana(
     name="getSupply", tag="Supply",
     summary="Total SOL supply",
-    description="Returns information about the total supply of SOL.",
+    description="Returns information about the current supply of SOL on the Solana network.",
     params=[config_param(extra_props={"excludeNonCirculatingAccountsList": s_bool(desc="If true, omit the (potentially long) `nonCirculatingAccounts` list from the response. Default false.", example=True)})],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -1263,7 +1263,7 @@ add_solana(
 add_solana(
     name="getLargestAccounts", tag="Supply",
     summary="Largest SOL accounts",
-    description="Returns the 20 largest accounts by lamport balance, optionally filtered by circulating / non-circulating.",
+    description="Returns the 20 largest accounts by lamport balance. Results may be cached up to two hours.",
     params=[config_param(extra_props={"filter": s_string(desc="Restrict the response to circulating or non-circulating accounts.", enum=["circulating", "nonCirculating"], example="circulating")})],
     params_example=[{"filter": "circulating"}],
     result_schema=s_obj(required=["context", "value"], properties=[
@@ -1277,7 +1277,7 @@ add_solana(
 add_solana(
     name="requestAirdrop", tag="Misc",
     summary="Airdrop SOL (devnet/testnet only)",
-    description="Requests an airdrop of lamports to the given pubkey. Available on devnet/testnet only.",
+    description="⚠️ WARNING: This RPC method is disabled on Solana Vibe Station mainnet-beta nodes. This method is not available on our infrastructure. Please use alternative faucets for obtaining devnet/testnet SOL: Solana Faucet QuickNode Multi-chain Faucet Solana CLI: solana airdrop 1 Requests an airdrop of lamports to a specified Pubkey.",
     params=[
         pubkey_param(),
         {"name": "lamports", "schema_doc": "Lamports to airdrop.", "schema": s_int(example=1000000000), "required": True},
@@ -1291,7 +1291,7 @@ add_solana(
 add_solana(
     name="minimumLedgerSlot", tag="Misc",
     summary="Lowest slot in ledger",
-    description="Returns the lowest slot the node has information about in its ledger.",
+    description="Returns the lowest slot that the node has information about in its ledger. This method is useful for understanding the historical data availability of a Solana node. The value may increase over time if the node is configured to purge older ledger data to manage storage requirements. This is particularly important for applications that need to query historical data, as attempting to access slots below this minimum will result in data not being available. The method provides a simple way to determine the earliest point in time for which the node can provide blockchain state information.",
     params=[],
     params_example=[],
     result_schema=s_int(),
@@ -1301,7 +1301,7 @@ add_solana(
 add_solana(
     name="getRecentPerformanceSamples", tag="Misc",
     summary="Recent performance samples",
-    description="Returns up to `limit` recent performance samples in reverse slot order.",
+    description="Returns a list of recent performance samples in reverse slot order (most recent first). Performance samples are collected every 60 seconds and provide detailed metrics about network activity including transaction counts, slot progression, and timing information. Each sample represents a 60-second window of network activity and includes: Total number of transactions processed Number of non-vote transactions (user-initiated transactions) Number of slots that occurred during the sample period The slot number when the sample was taken",
     params=[{"name": "limit", "schema_doc": "Number of samples to return (1–720).", "schema": s_int(example=5), "required": False}],
     params_example=[5],
     result_schema=s_arr(s_obj(properties=[
@@ -1309,6 +1309,51 @@ add_solana(
         ("samplePeriodSecs", s_int()), ("numNonVoteTransactions", s_int()),
     ])),
     result_example=[{"slot": 416997380, "numTransactions": 168226, "numSlots": 152, "samplePeriodSecs": 60, "numNonVoteTransactions": 54837}, {"slot": 416997228, "numTransactions": 174204, "numSlots": 158, "samplePeriodSecs": 60, "numNonVoteTransactions": 56218}, {"slot": 416997070, "numTransactions": 167063, "numSlots": 145, "samplePeriodSecs": 60, "numNonVoteTransactions": 58812}],
+)
+
+
+
+add_solana(
+    name="getFirstAvailableBlock", tag="Block",
+    summary="Lowest available block in the ledger",
+    description="Returns the slot of the lowest confirmed block that has not been purged from the ledger. This is useful for determining the earliest available block data in the ledger history.",
+    params=[],
+    params_example=[],
+    result_schema=s_int(desc="Lowest slot the node has data for in its ledger.", example=140000000),
+    result_example=140000000,
+)
+
+add_solana(
+    name="getHighestSnapshotSlot", tag="Block",
+    summary="Highest slots covered by snapshots",
+    description="Returns the highest slot information that the node has snapshots for. This will find the highest full snapshot slot, and the highest incremental snapshot slot based on the full snapshot slot, if there is one. Version Restriction : This method is only available in solana-core v1.9 or newer. Please use getSnapshotSlot for solana-core v1.8 and below.",
+    params=[],
+    params_example=[],
+    result_schema=s_obj(properties=[
+        ("full", s_int(desc="Highest full snapshot slot the node has.", example=416997000)),
+        ("incremental", s_int(nullable=True, desc="Highest incremental snapshot slot derived from the full snapshot, if any.", example=416997220)),
+    ]),
+    result_example={"full": 416997000, "incremental": 416997220},
+)
+
+add_solana(
+    name="getMaxRetransmitSlot", tag="Slots",
+    summary="Highest slot retransmitted",
+    description="Returns the highest slot number for which the validator has retransmitted shreds from its retransmit stage.",
+    params=[],
+    params_example=[],
+    result_schema=s_int(desc="Highest slot the retransmit stage has reached.", example=416997239),
+    result_example=416997239,
+)
+
+add_solana(
+    name="getMaxShredInsertSlot", tag="Slots",
+    summary="Highest slot with shred insertion",
+    description="Returns the highest slot number for which shreds have been received and inserted into the validator's blockstore.",
+    params=[],
+    params_example=[],
+    result_schema=s_int(desc="Highest slot for which the node has inserted shreds.", example=416997239),
+    result_example=416997239,
 )
 
 
@@ -1326,7 +1371,7 @@ def add_historical(**method):
 add_historical(
     name="getBlock", tag="Block",
     summary="Historical block by slot",
-    description="Returns identity and transaction information about a historical block by slot, served from SVS's long-term ledger storage.",
+    description="Returns identity and transaction information about a confirmed block in the ledger. Provides detailed block data including all transactions and their metadata.",
     params=[
         {"name": "slot", "schema_doc": "Slot number.", "schema": s_int(example=178000000), "required": True},
         config_param(extra_props={
@@ -1348,7 +1393,7 @@ add_historical(
 add_historical(
     name="getBlocks", tag="Block",
     summary="Historical confirmed blocks in a range",
-    description="Returns confirmed blocks between two historical slots (inclusive).",
+    description="Returns a list of confirmed blocks between two slots",
     params=[
         {"name": "startSlot", "schema_doc": "Start slot (inclusive).", "schema": s_int(example=178000000), "required": True},
         {"name": "endSlot", "schema_doc": "End slot (inclusive).", "schema": s_int(example=178000010), "required": False},
@@ -1362,7 +1407,7 @@ add_historical(
 add_historical(
     name="getBlocksWithLimit", tag="Block",
     summary="Historical confirmed blocks starting at slot",
-    description="Returns up to `limit` confirmed historical blocks starting at `startSlot`.",
+    description="Returns a list of confirmed blocks starting at the given slot. This method provides an efficient way to retrieve a range of sequential block slots, which is useful for block explorers, analytics tools, and applications that need to process historical blockchain data in batches. Important : The limit must be no more than 500,000 blocks higher than the start_slot.",
     params=[
         {"name": "startSlot", "schema_doc": "Start slot.", "schema": s_int(example=178000000), "required": True},
         {"name": "limit", "schema_doc": "Number of blocks (max 500,000).", "schema": s_int(example=10), "required": True},
@@ -1376,7 +1421,7 @@ add_historical(
 add_historical(
     name="getBlockTime", tag="Block",
     summary="Historical block production time",
-    description="Returns the estimated Unix timestamp at which a historical block was produced.",
+    description="Returns the estimated production time of a block. Each validator reports their UTC time to the ledger on a regular interval by intermittently adding a timestamp to a Vote for a particular block. A requested block's time is calculated from the stake-weighted mean of the Vote timestamps in a set of recent blocks recorded on the ledger.",
     params=[{"name": "slot", "schema_doc": "Slot number.", "schema": s_int(example=178000000), "required": True}],
     params_example=[178000000],
     result_schema=s_int(nullable=True),
@@ -1386,7 +1431,7 @@ add_historical(
 add_historical(
     name="getFirstAvailableBlock", tag="Block",
     summary="Lowest historical block",
-    description="Returns the lowest slot number that the historical archive has data for.",
+    description="Returns the slot of the lowest confirmed block that has not been purged from the ledger. This is useful for determining the earliest available block data in the ledger history.",
     params=[],
     params_example=[],
     result_schema=s_int(),
@@ -1396,7 +1441,7 @@ add_historical(
 add_historical(
     name="getSlot", tag="Slots",
     summary="Highest historical slot",
-    description="Returns the highest slot number that the historical archive has data for.",
+    description="Returns the highest slot available on the historical RPC endpoints.",
     params=[config_param()],
     params_example=[{"commitment": "finalized"}],
     result_schema=s_int(),
@@ -1406,7 +1451,7 @@ add_historical(
 add_historical(
     name="getSignaturesForAddress", tag="Transactions",
     summary="Historical signatures for an address",
-    description="Returns historical signatures involving an address from SVS's long-term ledger storage.",
+    description="Returns signatures for confirmed transactions that include the given address in their accountKeys list. Returns signatures backwards in time from the provided signature or most recent confirmed block. This method is essential for transaction history, wallet activity feeds, and building transaction explorers.",
     params=[
         pubkey_param(),
         config_param(extra_props=OrderedDict([
@@ -1428,7 +1473,7 @@ add_historical(
 add_historical(
     name="getSignatureStatuses", tag="Transactions",
     summary="Historical signature statuses",
-    description="Returns confirmation status for historical signatures.",
+    description="Returns the statuses of a list of transaction signatures. This method is essential for checking whether transactions have been confirmed, failed, or are still processing. It's commonly used by wallets and dApps to monitor transaction status and provide real-time feedback to users. You can check up to 256 signatures in a single request.",
     params=[
         {"name": "signatures", "schema_doc": "Array of base-58 signatures.", "schema": s_arr(s_string()), "required": True},
         config_param(extra_props={"searchTransactionHistory": s_bool(desc="If true, look up signatures in the long-term ledger archive (always true for the historical RPC).", example=True, default=True)}),
@@ -1448,7 +1493,7 @@ add_historical(
 add_historical(
     name="getTransaction", tag="Transactions",
     summary="Historical transaction by signature",
-    description="Returns full transaction data for a historical signature.",
+    description="Returns transaction details for a confirmed transaction signature. Provides comprehensive information about the transaction including its status, fees, logs, and account changes. This method is essential for transaction explorers, wallets, and dApps that need to analyze transaction execution details. Important : For most modern Solana transactions, you must include maxSupportedTransactionVersion: 0 in the request parameters, otherwise the request will fail with an error if the transaction is a versioned transaction.",
     params=[
         {"name": "signature", "schema_doc": "Base-58 transaction signature.", "schema": s_string(), "required": True},
         config_param(extra_props={"encoding": s_ref("#/components/schemas/Encoding"), "maxSupportedTransactionVersion": s_int()}),

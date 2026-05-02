@@ -66,7 +66,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns information associated with the account at the given pubkey, including its lamport balance, owner program, executable flag, rent epoch, and data.
+        Returns all information associated with the account of provided Pubkey
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
@@ -269,7 +269,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns the lamport balance of the account at the provided pubkey.
+        Returns the lamport balance of the account of provided Pubkey. The balance is returned in lamports, where 1 SOL = 1,000,000,000 lamports.
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
@@ -440,7 +440,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns account information for a list of pubkeys (max 100 per request).
+        Returns account information for multiple accounts in a single request. This is more efficient than making multiple getAccountInfo calls when you need to fetch data from several accounts at once. You can request up to 100 accounts per call.
         **Parameters**
 
         0. `pubkeys` (required) — Array of base-58 encoded pubkeys, max 100.
@@ -643,7 +643,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns all accounts owned by the provided program pubkey. Heavy query — prefer paginated alternatives where possible.
+        Returns all accounts owned by a given program. This method is useful for finding all accounts associated with a specific program, such as all token accounts for a particular token mint or all accounts created by a custom program. You can apply filters to narrow down the results. SPL/SPL2022 Token Program Requirements: When querying SPL or SPL2022 token programs, the configuration object must include: filters (array, required): An array of filters to apply to the accounts. Must contain the dataSize filter. Must be one of the known lengths for SPL/SPL2022 program accounts (mint= 82 , token= 165 ) or a larger value when filtering for SPL2022 accounts with extensions. When filtering for multisig accounts, the size must be 355 for accounts of both programs. When filtering for token accounts : Must contain at least one memcmp filter. Only the mint ( offset = 0 , 32 bytes data length) and the owner ( offset = 32 , 32 bytes data length) filters are supported.
         **Parameters**
 
         0. `programId` (required) — Program pubkey, base-58.
@@ -879,7 +879,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns the token balance of an SPL token account.
+        Returns the token balance of an SPL Token account.
         **Parameters**
 
         0. `pubkey` (required) — Token account pubkey, base-58.
@@ -1032,7 +1032,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns all SPL token accounts whose delegate matches the provided pubkey.
+        Returns all SPL Token accounts by approved delegate. This method is essential for finding token accounts where a specific address has been granted delegation permissions to spend tokens on behalf of the owner.
         **Parameters**
 
         0. `delegate` (required) — Delegate pubkey, base-58.
@@ -1209,7 +1209,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns all SPL token accounts owned by the provided pubkey, optionally filtered by mint or token program.
+        Returns all SPL Token accounts by token owner.
         **Parameters**
 
         0. `owner` (required) — Owner pubkey, base-58.
@@ -1386,7 +1386,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns the 20 largest token accounts for a given mint, sorted descending by balance.
+        Returns the 20 largest accounts of a particular SPL Token type. This method is essential for analyzing token distribution, identifying whale accounts, and understanding token concentration patterns.
         **Parameters**
 
         0. `mint` (required) — Token mint pubkey, base-58.
@@ -1559,7 +1559,7 @@ paths:
       tags:
       - Account
       description: |
-        Returns the total circulating supply of an SPL token mint.
+        Returns the total supply of an SPL Token type. This method is essential for understanding token economics, monitoring token distribution, and tracking token supply changes over time.
         **Parameters**
 
         0. `mint` (required) — Token mint pubkey, base-58.
@@ -1711,7 +1711,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns identity and transaction information about a confirmed block in the ledger.
+        Returns identity and transaction information about a confirmed block in the ledger. Provides detailed block data including all transactions and their metadata.
         **Parameters**
 
         0. `slot` (required) — Slot number to fetch.
@@ -1919,7 +1919,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns the current block height of the node.
+        Returns the current block height of the node. Block height is the number of blocks that have been produced since the genesis block. This is different from slot numbers, as blocks represent confirmed batches of transactions.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -2047,7 +2047,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns a list of confirmed blocks between two slots (inclusive).
+        Returns a list of confirmed blocks between two slots
         **Parameters**
 
         0. `startSlot` (required) — Start slot (inclusive).
@@ -2203,7 +2203,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns up to `limit` confirmed blocks starting at `startSlot`.
+        Returns a list of confirmed blocks starting at the given slot. This method provides an efficient way to retrieve a range of sequential block slots, which is useful for block explorers, analytics tools, and applications that need to process historical blockchain data in batches. Important : The limit must be no more than 500,000 blocks higher than the start_slot.
         **Parameters**
 
         0. `startSlot` (required) — Start slot.
@@ -2361,7 +2361,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns the estimated Unix timestamp at which a block was produced.
+        Returns the estimated production time of a block. Each validator reports their UTC time to the ledger on a regular interval by intermittently adding a timestamp to a Vote for a particular block. A requested block's time is calculated from the stake-weighted mean of the Vote timestamps in a set of recent blocks recorded on the ledger.
         **Parameters**
 
         0. `slot` (required) — Slot number.
@@ -2482,7 +2482,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns the amount of cluster stake in lamports that has voted on a particular block.
+        Returns commitment for particular block. This method provides information about the cluster stake that has voted on a specific block at each depth.
         **Parameters**
 
         0. `slot` (required) — Slot number.
@@ -2650,7 +2650,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns recent block production information from the current or previous epoch.
+        Returns recent block production information from the current or previous epoch
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -2839,7 +2839,7 @@ paths:
       summary: getClusterNodes — All cluster nodes
       tags:
       - Cluster
-      description: Returns information about all the nodes participating in the cluster.
+      description: Returns information about all the nodes participating in the cluster. This includes details about each node's network addresses, version, and configuration parameters.
       requestBody:
         required: true
         content:
@@ -2981,7 +2981,7 @@ paths:
       tags:
       - Cluster
       description: |
-        Returns information about the current epoch, including absolute slot, slot index, and slots in the epoch.
+        Returns information about the current epoch including the current slot, block height, epoch number, slot index within the epoch, total slots in the epoch, and transaction count.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -3257,7 +3257,7 @@ paths:
       summary: getGenesisHash — Genesis hash
       tags:
       - Cluster
-      description: Returns the genesis hash of the cluster.
+      description: Returns the genesis hash of the Solana network. The genesis hash is a unique identifier for the blockchain network that represents the initial state of the ledger.
       requestBody:
         required: true
         content:
@@ -3364,7 +3364,7 @@ paths:
       summary: getHealth — Node health
       tags:
       - Cluster
-      description: Returns `ok` if the node is healthy, otherwise an error.
+      description: Returns the current health of the node. A healthy node is one that is within 25 slots of the latest cluster confirmed slot. This method is useful for monitoring node synchronization status and determining if the node is keeping up with the network.
       requestBody:
         required: true
         content:
@@ -3483,7 +3483,7 @@ paths:
       summary: getIdentity — Node identity
       tags:
       - Cluster
-      description: Returns the identity pubkey of the current node.
+      description: Returns the identity pubkey for the current node. The identity pubkey uniquely identifies the validator node in the Solana network.
       requestBody:
         required: true
         content:
@@ -3598,7 +3598,7 @@ paths:
       summary: getVersion — Solana version
       tags:
       - Cluster
-      description: Returns the Solana software version running on the node.
+      description: Returns the current Solana version information running on the node.
       requestBody:
         required: true
         content:
@@ -3713,7 +3713,7 @@ paths:
       tags:
       - Fees
       description: |
-        Returns the estimated fee in lamports for a base-64 encoded compiled message.
+        Get the fee the network will charge for a particular Message. Version Restriction : This method is only available in solana-core v1.9 or newer. Please use getFees for solana-core v1.8 and below.
         **Parameters**
 
         0. `message` (required) — Base-64 encoded compiled transaction message (the `Message`, not a full transaction). Used by `getFeeForMessage`.
@@ -3882,7 +3882,7 @@ paths:
       tags:
       - Fees
       description: |
-        Returns the latest blockhash and the last block height at which it will be valid.
+        Returns the latest blockhash. This is essential for creating transactions as the blockhash is required for transaction validity.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -4040,7 +4040,7 @@ paths:
       tags:
       - Fees
       description: |
-        Returns whether a blockhash is still valid.
+        Returns whether a blockhash is still valid or not.
         **Parameters**
 
         0. `blockhash` (required) — Base-58 blockhash.
@@ -4195,7 +4195,7 @@ paths:
       tags:
       - Fees
       description: |
-        Returns the minimum balance (in lamports) required for an account of the given size to be rent-exempt.
+        Returns the minimum balance required to make an account rent exempt on the Solana blockchain. Rent is a mechanism on Solana that ensures efficient usage of blockchain resources by requiring accounts to maintain a minimum balance proportional to the amount of data they store. Accounts that maintain this minimum balance are "rent exempt" and will never have their balance reduced by the network.
         **Parameters**
 
         0. `dataLength` (required) — Account data length in bytes.
@@ -4329,7 +4329,7 @@ paths:
       tags:
       - Fees
       description: |
-        Returns recent priority fees observed in the last 150 blocks, optionally constrained to accounts.
+        Returns a list of prioritization fees from recent blocks to help estimate appropriate priority fees for transactions. The method returns data from up to 150 recent blocks stored in the node's prioritization-fee cache. When account addresses are provided, the response reflects the fees needed to land a transaction that locks all specified accounts as writable, helping estimate fees for transactions with account contention. This data is essential for applications that need to dynamically adjust priority fees based on current network conditions, ensuring transactions are processed quickly without overpaying. The fees are expressed in microlamports per compute unit, where 1 microlamport = 0.000001 lamports.
         **Parameters**
 
         0. `addresses` (optional) — Optional list of account pubkeys (max 128). Returned fees are scoped to recent blocks that referenced any of these accounts.
@@ -4482,7 +4482,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Returns confirmed signatures for transactions involving the given address, newest first.
+        Returns signatures for confirmed transactions that include the given address in their accountKeys list. Returns signatures backwards in time from the provided signature or most recent confirmed block. This method is essential for transaction history, wallet activity feeds, and building transaction explorers.
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
@@ -4678,7 +4678,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Returns the statuses of a list of transaction signatures.
+        Returns the statuses of a list of transaction signatures. This method is essential for checking whether transactions have been confirmed, failed, or are still processing. It's commonly used by wallets and dApps to monitor transaction status and provide real-time feedback to users. You can check up to 256 signatures in a single request.
         **Parameters**
 
         0. `signatures` (required) — Array of base-58 transaction signatures (max 256).
@@ -4871,7 +4871,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Returns transaction details for a confirmed signature.
+        Returns transaction details for a confirmed transaction signature. Provides comprehensive information about the transaction including its status, fees, logs, and account changes. This method is essential for transaction explorers, wallets, and dApps that need to analyze transaction execution details. Important : For most modern Solana transactions, you must include maxSupportedTransactionVersion: 0 in the request parameters, otherwise the request will fail with an error if the transaction is a versioned transaction.
         **Parameters**
 
         0. `signature` (required) — Base-58 transaction signature.
@@ -5053,7 +5053,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Returns the cumulative count of transactions processed since the cluster started.
+        Returns the current transaction count from the ledger. This method provides a cumulative count of all transactions that have been processed by the Solana network since genesis.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -5179,7 +5179,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Submits a fully-signed, encoded transaction to the cluster for processing.
+        Submits a signed transaction to the cluster for processing and returns the transaction signature if successful. This is the primary method for executing transactions on the Solana network. The transaction must be fully signed and serialized before submission. The method provides various options for controlling transaction processing behavior, including preflight checks, retry logic, and encoding formats. Transactions that fail preflight checks or network validation will return detailed error information.
         **Parameters**
 
         0. `transaction` (required) — Fully-signed transaction encoded per the chosen `encoding` (base-58 by default, base-64 recommended).
@@ -5359,7 +5359,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Simulates a transaction without committing it. Useful for verifying account changes and estimating compute.
+        Simulates sending a transaction to get the effects that would occur if the transaction was committed. The simulation runs against the current state of the blockchain and provides detailed information including logs, account changes, compute units consumed, and any errors that would occur during execution.
         **Parameters**
 
         0. `transaction` (required) — Encoded transaction (signed or unsigned, depending on `sigVerify`).
@@ -5589,7 +5589,7 @@ paths:
       tags:
       - Slots
       description: |
-        Returns the slot that has reached the given commitment level.
+        Returns the slot that has reached the given or default commitment level.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -5716,7 +5716,7 @@ paths:
       tags:
       - Slots
       description: |
-        Returns the current slot leader pubkey.
+        Returns the current slot leader.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -5841,7 +5841,7 @@ paths:
       tags:
       - Slots
       description: |
-        Returns the slot leaders for a contiguous range of slots.
+        Returns the slot leaders for a given slot range. This method provides the sequence of validators scheduled to produce blocks for consecutive slots, which is essential for understanding the upcoming block production schedule on the Solana network.
         **Parameters**
 
         0. `startSlot` (required) — First slot.
@@ -5980,7 +5980,7 @@ paths:
       tags:
       - Slots
       description: |
-        Returns the leader schedule for an epoch.
+        Returns the leader schedule for an epoch, showing which validator is assigned to each slot.
         **Parameters**
 
         0. `slot` (optional) — Slot to compute the epoch from (optional).
@@ -6131,7 +6131,7 @@ paths:
       tags:
       - Stake
       description: |
-        Returns the minimum delegation, in lamports, for a stake account.
+        Returns the minimum delegation amount required for staking SOL on the Solana network, expressed in lamports.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -6280,7 +6280,7 @@ paths:
       tags:
       - Validators
       description: |
-        Returns information about all vote accounts in the current and delinquent buckets.
+        Returns the account info and associated stake for all the voting accounts in the current bank.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -6449,7 +6449,7 @@ paths:
       tags:
       - Inflation
       description: |
-        Returns the current inflation governor (initial, terminal, taper, foundation, foundationTerm).
+        Returns the current inflation governor, which contains the parameters that control Solana's inflation schedule including initial rates, taper rates, terminal rates, and foundation allocation.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -6589,7 +6589,7 @@ paths:
       summary: getInflationRate — Inflation rate
       tags:
       - Inflation
-      description: Returns the specific inflation values for the current epoch.
+      description: Returns the specific inflation values for the current epoch, including total inflation and the breakdown between validator rewards and foundation allocation.
       requestBody:
         required: true
         content:
@@ -6710,7 +6710,7 @@ paths:
       tags:
       - Inflation
       description: |
-        Returns the inflation rewards for a list of addresses for an epoch.
+        Returns the inflation/staking reward for a list of addresses for an epoch.
         **Parameters**
 
         0. `addresses` (required) — Array of base-58 pubkeys.
@@ -6889,7 +6889,7 @@ paths:
       tags:
       - Supply
       description: |
-        Returns information about the total supply of SOL.
+        Returns information about the current supply of SOL on the Solana network.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -7057,7 +7057,7 @@ paths:
       tags:
       - Supply
       description: |
-        Returns the 20 largest accounts by lamport balance, optionally filtered by circulating / non-circulating.
+        Returns the 20 largest accounts by lamport balance. Results may be cached up to two hours.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -7225,7 +7225,7 @@ paths:
       tags:
       - Misc
       description: |
-        Requests an airdrop of lamports to the given pubkey. Available on devnet/testnet only.
+        ⚠️ WARNING: This RPC method is disabled on Solana Vibe Station mainnet-beta nodes. This method is not available on our infrastructure. Please use alternative faucets for obtaining devnet/testnet SOL: Solana Faucet QuickNode Multi-chain Faucet Solana CLI: solana airdrop 1 Requests an airdrop of lamports to a specified Pubkey.
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
@@ -7373,7 +7373,7 @@ paths:
       summary: minimumLedgerSlot — Lowest slot in ledger
       tags:
       - Misc
-      description: Returns the lowest slot the node has information about in its ledger.
+      description: Returns the lowest slot that the node has information about in its ledger. This method is useful for understanding the historical data availability of a Solana node. The value may increase over time if the node is configured to purge older ledger data to manage storage requirements. This is particularly important for applications that need to query historical data, as attempting to access slots below this minimum will result in data not being available. The method provides a simple way to determine the earliest point in time for which the node can provide blockchain state information.
       requestBody:
         required: true
         content:
@@ -7486,7 +7486,7 @@ paths:
       tags:
       - Misc
       description: |
-        Returns up to `limit` recent performance samples in reverse slot order.
+        Returns a list of recent performance samples in reverse slot order (most recent first). Performance samples are collected every 60 seconds and provide detailed metrics about network activity including transaction counts, slot progression, and timing information. Each sample represents a 60-second window of network activity and includes: Total number of transactions processed Number of non-vote transactions (user-initiated transactions) Number of slots that occurred during the sample period The slot number when the sample was taken
         **Parameters**
 
         0. `limit` (optional) — Number of samples to return (1–720).
@@ -7634,6 +7634,497 @@ paths:
 
           let samples = client.get_recent_performance_samples(Some(5))?;
           for s in &samples { println!("{:?}", s); }
+  /getFirstAvailableBlock:
+    post:
+      operationId: getFirstAvailableBlock
+      summary: getFirstAvailableBlock — Lowest available block in the ledger
+      tags:
+      - Block
+      description: Returns the slot of the lowest confirmed block that has not been purged from the ledger. This is useful for determining the earliest available block data in the ledger history.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  description: JSON-RPC protocol version.
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  description: Request identifier echoed back in the response.
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - getFirstAvailableBlock
+                  description: Must be `getFirstAvailableBlock`.
+                  example: getFirstAvailableBlock
+                params:
+                  type: array
+                  description: No parameters.
+                  maxItems: 0
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getFirstAvailableBlock
+                  params: []
+      responses:
+        '200':
+          description: Successful `getFirstAvailableBlock` response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: integer
+                      format: int64
+                      description: Lowest slot the node has data for in its ledger.
+                      example: 140000000
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result: 140000000
+        '401': *id001
+        '403': *id002
+        '429': *id003
+        '500': *id004
+      security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getFirstAvailableBlock","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getFirstAvailableBlock",
+              "params": []
+          }).json()
+          print(resp["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const resp = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1,
+              method: "getFirstAvailableBlock",
+              params: []
+            }),
+          });
+          const data = await resp.json();
+          console.log(data.result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use serde_json::json;
+
+          let body = json!({
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getFirstAvailableBlock",
+              "params": []
+          }});
+          let resp: serde_json::Value = reqwest::blocking::Client::new()
+              .post("https://public.rpc.solanavibestation.com").json(&body).send()?.json()?;
+          println!("{}", resp["result"]);
+  /getHighestSnapshotSlot:
+    post:
+      operationId: getHighestSnapshotSlot
+      summary: getHighestSnapshotSlot — Highest slots covered by snapshots
+      tags:
+      - Block
+      description: 'Returns the highest slot information that the node has snapshots for. This will find the highest full snapshot slot, and the highest incremental snapshot slot based on the full snapshot slot, if there is one. Version Restriction : This method is only available in solana-core v1.9 or newer. Please use getSnapshotSlot for solana-core v1.8 and below.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  description: JSON-RPC protocol version.
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  description: Request identifier echoed back in the response.
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - getHighestSnapshotSlot
+                  description: Must be `getHighestSnapshotSlot`.
+                  example: getHighestSnapshotSlot
+                params:
+                  type: array
+                  description: No parameters.
+                  maxItems: 0
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getHighestSnapshotSlot
+                  params: []
+      responses:
+        '200':
+          description: Successful `getHighestSnapshotSlot` response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: object
+                      properties:
+                        full:
+                          type: integer
+                          format: int64
+                          description: Highest full snapshot slot the node has.
+                          example: 416997000
+                        incremental:
+                          type: integer
+                          format: int64
+                          description: Highest incremental snapshot slot derived from the full snapshot, if any.
+                          example: 416997220
+                          nullable: true
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result:
+                  full: 416997000
+                  incremental: 416997220
+        '401': *id001
+        '403': *id002
+        '429': *id003
+        '500': *id004
+      security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getHighestSnapshotSlot","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getHighestSnapshotSlot",
+              "params": []
+          }).json()
+          print(resp["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const resp = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1,
+              method: "getHighestSnapshotSlot",
+              params: []
+            }),
+          });
+          const data = await resp.json();
+          console.log(data.result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use serde_json::json;
+
+          let body = json!({
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getHighestSnapshotSlot",
+              "params": []
+          }});
+          let resp: serde_json::Value = reqwest::blocking::Client::new()
+              .post("https://public.rpc.solanavibestation.com").json(&body).send()?.json()?;
+          println!("{}", resp["result"]);
+  /getMaxRetransmitSlot:
+    post:
+      operationId: getMaxRetransmitSlot
+      summary: getMaxRetransmitSlot — Highest slot retransmitted
+      tags:
+      - Slots
+      description: Returns the highest slot number for which the validator has retransmitted shreds from its retransmit stage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  description: JSON-RPC protocol version.
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  description: Request identifier echoed back in the response.
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - getMaxRetransmitSlot
+                  description: Must be `getMaxRetransmitSlot`.
+                  example: getMaxRetransmitSlot
+                params:
+                  type: array
+                  description: No parameters.
+                  maxItems: 0
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getMaxRetransmitSlot
+                  params: []
+      responses:
+        '200':
+          description: Successful `getMaxRetransmitSlot` response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: integer
+                      format: int64
+                      description: Highest slot the retransmit stage has reached.
+                      example: 416997239
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result: 416997239
+        '401': *id001
+        '403': *id002
+        '429': *id003
+        '500': *id004
+      security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getMaxRetransmitSlot","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getMaxRetransmitSlot",
+              "params": []
+          }).json()
+          print(resp["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const resp = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1,
+              method: "getMaxRetransmitSlot",
+              params: []
+            }),
+          });
+          const data = await resp.json();
+          console.log(data.result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use serde_json::json;
+
+          let body = json!({
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getMaxRetransmitSlot",
+              "params": []
+          }});
+          let resp: serde_json::Value = reqwest::blocking::Client::new()
+              .post("https://public.rpc.solanavibestation.com").json(&body).send()?.json()?;
+          println!("{}", resp["result"]);
+  /getMaxShredInsertSlot:
+    post:
+      operationId: getMaxShredInsertSlot
+      summary: getMaxShredInsertSlot — Highest slot with shred insertion
+      tags:
+      - Slots
+      description: Returns the highest slot number for which shreds have been received and inserted into the validator's blockstore.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  description: JSON-RPC protocol version.
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  description: Request identifier echoed back in the response.
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - getMaxShredInsertSlot
+                  description: Must be `getMaxShredInsertSlot`.
+                  example: getMaxShredInsertSlot
+                params:
+                  type: array
+                  description: No parameters.
+                  maxItems: 0
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getMaxShredInsertSlot
+                  params: []
+      responses:
+        '200':
+          description: Successful `getMaxShredInsertSlot` response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: integer
+                      format: int64
+                      description: Highest slot for which the node has inserted shreds.
+                      example: 416997239
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result: 416997239
+        '401': *id001
+        '403': *id002
+        '429': *id003
+        '500': *id004
+      security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getMaxShredInsertSlot","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getMaxShredInsertSlot",
+              "params": []
+          }).json()
+          print(resp["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const resp = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1,
+              method: "getMaxShredInsertSlot",
+              params: []
+            }),
+          });
+          const data = await resp.json();
+          console.log(data.result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use serde_json::json;
+
+          let body = json!({
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getMaxShredInsertSlot",
+              "params": []
+          }});
+          let resp: serde_json::Value = reqwest::blocking::Client::new()
+              .post("https://public.rpc.solanavibestation.com").json(&body).send()?.json()?;
+          println!("{}", resp["result"]);
 components:
   schemas:
     JsonRpcEnvelope:

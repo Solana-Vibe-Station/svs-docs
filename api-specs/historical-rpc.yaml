@@ -42,7 +42,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns identity and transaction information about a historical block by slot, served from SVS's long-term ledger storage.
+        Returns identity and transaction information about a confirmed block in the ledger. Provides detailed block data including all transactions and their metadata.
         **Parameters**
 
         0. `slot` (required) — Slot number.
@@ -247,7 +247,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns confirmed blocks between two historical slots (inclusive).
+        Returns a list of confirmed blocks between two slots
         **Parameters**
 
         0. `startSlot` (required) — Start slot (inclusive).
@@ -408,7 +408,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns up to `limit` confirmed historical blocks starting at `startSlot`.
+        Returns a list of confirmed blocks starting at the given slot. This method provides an efficient way to retrieve a range of sequential block slots, which is useful for block explorers, analytics tools, and applications that need to process historical blockchain data in batches. Important : The limit must be no more than 500,000 blocks higher than the start_slot.
         **Parameters**
 
         0. `startSlot` (required) — Start slot.
@@ -571,7 +571,7 @@ paths:
       tags:
       - Block
       description: |
-        Returns the estimated Unix timestamp at which a historical block was produced.
+        Returns the estimated production time of a block. Each validator reports their UTC time to the ledger on a regular interval by intermittently adding a timestamp to a Vote for a particular block. A requested block's time is calculated from the stake-weighted mean of the Vote timestamps in a set of recent blocks recorded on the ledger.
         **Parameters**
 
         0. `slot` (required) — Slot number.
@@ -696,7 +696,7 @@ paths:
       summary: getFirstAvailableBlock — Lowest historical block
       tags:
       - Block
-      description: Returns the lowest slot number that the historical archive has data for.
+      description: Returns the slot of the lowest confirmed block that has not been purged from the ledger. This is useful for determining the earliest available block data in the ledger history.
       requestBody:
         required: true
         content:
@@ -815,7 +815,7 @@ paths:
       tags:
       - Slots
       description: |
-        Returns the highest slot number that the historical archive has data for.
+        Returns the highest slot available on the historical RPC endpoints.
         **Parameters**
 
         0. `config` (optional) — Optional configuration object. Every field is optional; omit the entire object to use defaults.
@@ -947,7 +947,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Returns historical signatures involving an address from SVS's long-term ledger storage.
+        Returns signatures for confirmed transactions that include the given address in their accountKeys list. Returns signatures backwards in time from the provided signature or most recent confirmed block. This method is essential for transaction history, wallet activity feeds, and building transaction explorers.
         **Parameters**
 
         0. `pubkey` (required) — Base-58 encoded public key.
@@ -1147,7 +1147,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Returns confirmation status for historical signatures.
+        Returns the statuses of a list of transaction signatures. This method is essential for checking whether transactions have been confirmed, failed, or are still processing. It's commonly used by wallets and dApps to monitor transaction status and provide real-time feedback to users. You can check up to 256 signatures in a single request.
         **Parameters**
 
         0. `signatures` (required) — Array of base-58 signatures.
@@ -1342,7 +1342,7 @@ paths:
       tags:
       - Transactions
       description: |
-        Returns full transaction data for a historical signature.
+        Returns transaction details for a confirmed transaction signature. Provides comprehensive information about the transaction including its status, fees, logs, and account changes. This method is essential for transaction explorers, wallets, and dApps that need to analyze transaction execution details. Important : For most modern Solana transactions, you must include maxSupportedTransactionVersion: 0 in the request parameters, otherwise the request will fail with an error if the transaction is a versioned transaction.
         **Parameters**
 
         0. `signature` (required) — Base-58 transaction signature.
