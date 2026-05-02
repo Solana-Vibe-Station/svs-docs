@@ -34,6 +34,9 @@ jobs:
       - name: Validate Historical RPC spec
         run: redocly lint api-specs/historical-rpc.yaml --skip-rule no-unused-components
 
+      - name: Validate WebSocket RPC spec
+        run: redocly lint api-specs/websocket-rpc.yaml --skip-rule no-unused-components
+
       - name: Summary
         if: always()
         run: |
@@ -42,5 +45,4 @@ jobs:
           echo "| Spec | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| SVS API | ${{ steps.validate-svs.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Solana RPC | ${{ steps.validate-rpc.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Historical RPC | ${{ steps.validate-historical.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Solana RPC | ${{ steps.validate-rpc.outcome || '✅' }} |" >> $G

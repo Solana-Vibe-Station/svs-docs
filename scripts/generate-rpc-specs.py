@@ -221,7 +221,7 @@ def _success_response(method_name, result_schema, result_example):
     ])
 
 
-def build_operation(method, base_note=ENDPOINT_NOTE, historical=False):
+def build_operation(method, base_note=ENDPOINT_NOTE, historical=False, websocket=False):
     """Build a single OpenAPI Operation, including x-codeSamples and a
     multi-example requestBody.
 
@@ -240,6 +240,8 @@ def build_operation(method, base_note=ENDPOINT_NOTE, historical=False):
 
     if historical:
         x_samples = code_samples.historical_code_samples_for(name, method["params_example"])
+    elif websocket:
+        x_samples = code_samples.websocket_code_samples_for(name, method["params_example"])
     else:
         x_samples = code_samples.code_samples_for(name, method["params_example"])
 
@@ -265,11 +267,11 @@ def build_operation(method, base_note=ENDPOINT_NOTE, historical=False):
     return op
 
 
-def build_paths(methods, base_path_prefix="", base_note=ENDPOINT_NOTE, historical=False):
+def build_paths(methods, base_path_prefix="", base_note=ENDPOINT_NOTE, historical=False, websocket=False):
     paths = _OD()
     for m in methods:
         path = f"{base_path_prefix}/{m['name']}"
-        paths[path] = _OD([("post", build_operation(m, base_note=base_note, historical=historical))])
+        paths[path] = _OD([("post", build_operation(m, base_note=base_note, historical=historical, websocket=websocket))])
     return paths
 
 
@@ -1509,6 +1511,284 @@ add_historical(
 )
 
 
+
+# ---------------------------------------------------------------------------
+# WEBSOCKET RPC method catalog.
+#
+# These are JSON-RPC methods invoked over a WebSocket connection (wss://
+# scheme). The spec documents each method as if it were a POST so that
+# GitBook's OpenAPI rendering still produces a navigable per-method page
+# with a request/response schema. Each operation's description notes that
+# the actual transport is WebSocket and that the connection URL is wss://
+# rather than https://.
+#
+# Subscribe methods return an integer subscription id. The server then
+# pushes notifications to the client over the same WebSocket; those
+# notifications are not modeled in OpenAPI (event streams are out of
+# scope for OpenAPI 3.0 — see the description for the message shape).
+# Unsubscribe methods take that id and return a boolean.
+# ---------------------------------------------------------------------------
+
+WEBSOCKET_METHODS = []
+
+
+def add_ws(**method):
+    WEBSOCKET_METHODS.append(method)
+
+
+# Subscription-id result schema (used by every *Subscribe method)
+def _sub_id_result():
+    return s_int(desc="Subscription id. Save this value to call the matching unsubscribe method later.", example=24040)
+
+
+def _unsub_result():
+    return s_bool(desc="True if the unsubscribe succeeded.", example=True)
+
+
+# --- account subscriptions ---
+add_ws(
+    name="accountSubscribe", tag="Account Subscriptions",
+    summary="Subscribe to account changes",
+    description="Subscribe to an account to receive notifications when the lamports or data for a given account public key changes. Returns a subscription ID that can be used to unsubscribe. This method establishes a persistent WebSocket connection that will send real-time notifications whenever the specified account's state changes on the blockchain.",
+    params=[
+        pubkey_param(),
+        config_param(extra_props={"encoding": s_ref("#/components/schemas/Encoding")}),
+    ],
+    params_example=["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri", {"encoding": "jsonParsed", "commitment": "finalized"}],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="accountUnsubscribe", tag="Account Subscriptions",
+    summary="Cancel an account subscription",
+    description="Unsubscribe from account change notifications. This method cancels an existing account subscription identified by the subscription ID that was returned from a previous accountSubscribe call. Once unsubscribed, you will no longer receive accountNotification messages for the specified subscription.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by accountSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+# --- block subscriptions (unsupported) ---
+add_ws(
+    name="blockSubscribe", tag="Block Subscriptions",
+    summary="Subscribe to new blocks (UNSUPPORTED on SVS)",
+    description="**Not available on SVS nodes.** This method is considered unstable in Agave/Solana and is therefore not enabled on our RPC infrastructure. Calls will be rejected. Use an alternative subscription method or polling-based pattern for this use case. Subscribe to receive notification anytime a new block is confirmed or finalized.",
+    params=[
+        {"name": "filter", "schema_doc": "Filter for block subscription (`all`, or {mentionsAccountOrProgram: <pubkey>}).",
+         "schema": s_obj(additionalProperties=True, desc="Subscription filter."), "required": True},
+        config_param(extra_props={
+            "encoding": s_ref("#/components/schemas/Encoding"),
+            "transactionDetails": s_ref("#/components/schemas/TransactionDetails"),
+            "showRewards": s_bool(desc="Include block-level rewards.", example=False),
+            "maxSupportedTransactionVersion": s_int(desc="Highest transaction version the client can handle.", example=0),
+        }),
+    ],
+    params_example=["all", {"encoding": "json", "showRewards": False, "transactionDetails": "full", "maxSupportedTransactionVersion": 0}],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="blockUnsubscribe", tag="Block Subscriptions",
+    summary="Cancel a block subscription (UNSUPPORTED on SVS)",
+    description="**Not available on SVS nodes.** This method is considered unstable in Agave/Solana and is therefore not enabled on our RPC infrastructure. Calls will be rejected. Use an alternative subscription method or polling-based pattern for this use case. Unsubscribe from block notifications.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by blockSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+# --- logs subscriptions ---
+add_ws(
+    name="logsSubscribe", tag="Logs Subscriptions",
+    summary="Subscribe to transaction logs",
+    description="Subscribe to transaction logging to receive notifications when transactions occur that match specified filter criteria. This method establishes a persistent WebSocket connection that will send real-time log notifications whenever transactions matching your filters are processed by the network. You can filter by all transactions, transactions with votes, or transactions mentioning specific accounts.",
+    params=[
+        {
+            "name": "filter",
+            "schema_doc": "Either the string `all`, the string `allWithVotes`, or {mentions: [<pubkey>]}.",
+            "schema": s_obj(additionalProperties=True, desc="Logs filter — string `all` / `allWithVotes`, or an object with `mentions: [pubkey]`."),
+            "required": True,
+        },
+        config_param(),
+    ],
+    params_example=[{"mentions": ["11111111111111111111111111111111"]}, {"commitment": "finalized"}],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="logsUnsubscribe", tag="Logs Subscriptions",
+    summary="Cancel a logs subscription",
+    description="Unsubscribe from transaction log notifications. This method cancels an existing logs subscription identified by the subscription ID that was returned from a previous logsSubscribe call. Once unsubscribed, you will no longer receive logsNotification messages for the specified subscription.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by logsSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+# --- program subscriptions ---
+add_ws(
+    name="programSubscribe", tag="Program Subscriptions",
+    summary="Subscribe to program-owned account changes",
+    description="Subscribe to a program to receive notifications when the lamports or data for an account owned by the given program changes. This method establishes a persistent WebSocket connection that will send real-time notifications whenever accounts owned by the specified program are created, modified, or deleted. You can filter results by data size, account owner, or custom criteria to only receive notifications for accounts that match your requirements.",
+    params=[
+        pubkey_param(name="programId", desc="Program pubkey, base-58."),
+        config_param(extra_props={
+            "encoding": s_ref("#/components/schemas/Encoding"),
+            "filters": s_arr(memcmp_filter_schema(), desc="Optional filters that narrow the account set."),
+        }),
+    ],
+    params_example=["TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq", {"encoding": "jsonParsed", "filters": [{"dataSize": 165}]}],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="programUnsubscribe", tag="Program Subscriptions",
+    summary="Cancel a program subscription",
+    description="Unsubscribe from program-owned account change notifications. This method cancels an existing program subscription identified by the subscription ID that was returned from a previous programSubscribe call. Once unsubscribed, you will no longer receive programNotification messages for accounts owned by the specified program.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by programSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+# --- root subscriptions ---
+add_ws(
+    name="rootSubscribe", tag="Root Subscriptions",
+    summary="Subscribe to root slot updates",
+    description="Subscribe to receive notification anytime a new root is set by the validator. This method establishes a persistent WebSocket connection that will send real-time notifications whenever the validator updates the root slot. The root represents the most recent slot that has been finalized and committed to the ledger. This subscription is useful for tracking the overall progress of the blockchain and understanding when transactions become irreversibly confirmed.",
+    params=[],
+    params_example=[],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="rootUnsubscribe", tag="Root Subscriptions",
+    summary="Cancel a root subscription",
+    description="Unsubscribe from root notifications. This method cancels an existing root subscription identified by the subscription ID that was returned from a previous rootSubscribe call. Once unsubscribed, you will no longer receive rootNotification messages when the validator sets new root slots.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by rootSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+# --- signature subscriptions ---
+add_ws(
+    name="signatureSubscribe", tag="Signature Subscriptions",
+    summary="Subscribe to a transaction signature's status",
+    description="Subscribe to receive a notification when the transaction with the given signature reaches the specified commitment level. This is a subscription to a single notification that is automatically cancelled by the server once the signatureNotification is sent. Optionally, you can also receive notifications when the signature is first received by the RPC before processing begins. The transaction signature must be the first signature from the transaction.",
+    params=[
+        {"name": "signature", "schema_doc": "Base-58 transaction signature.",
+         "schema": s_string(desc="Transaction signature.", example="4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"),
+         "required": True},
+        config_param(extra_props={"enableReceivedNotification": s_bool(desc="Also send a notification when the transaction is first received.", example=False)}),
+    ],
+    params_example=["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa", {"commitment": "finalized"}],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="signatureUnsubscribe", tag="Signature Subscriptions",
+    summary="Cancel a signature subscription",
+    description="Unsubscribe from signature confirmation notification. This method cancels an existing signature subscription identified by the subscription ID that was returned from a previous signatureSubscribe call. Note that signature subscriptions are automatically cancelled by the server after sending the first notification, so this method is typically used to cancel a subscription before the transaction is confirmed or processed.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by signatureSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+# --- slot subscriptions ---
+add_ws(
+    name="slotSubscribe", tag="Slot Subscriptions",
+    summary="Subscribe to slot updates",
+    description="Subscribe to receive notification anytime a slot is processed by the validator. This method establishes a persistent WebSocket connection that will send real-time notifications whenever the validator processes a new slot. Each notification includes information about the current slot, its parent slot, and the current root slot. This subscription provides high-frequency updates about blockchain progression and is useful for monitoring network activity, tracking slot timing, and understanding the relationship between processed slots and finalized roots.",
+    params=[],
+    params_example=[],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="slotUnsubscribe", tag="Slot Subscriptions",
+    summary="Cancel a slot subscription",
+    description="Unsubscribe from slot notifications. This method cancels an existing slot subscription identified by the subscription ID that was returned from a previous slotSubscribe call. Once unsubscribed, you will no longer receive slotNotification messages when new slots are processed by the validator. This is useful for stopping high-frequency slot monitoring when no longer needed.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by slotSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+# --- vote subscriptions (unsupported) ---
+add_ws(
+    name="voteSubscribe", tag="Vote Subscriptions",
+    summary="Subscribe to vote messages (UNSUPPORTED on SVS)",
+    description="**Not available on SVS nodes.** This method is considered unstable in Agave/Solana and is therefore not enabled on our RPC infrastructure. Calls will be rejected. Use an alternative subscription method or polling-based pattern for this use case. Subscribe to receive notification any time a new vote is observed in gossip.",
+    params=[],
+    params_example=[],
+    result_schema=_sub_id_result(),
+    result_example=24040,
+)
+
+add_ws(
+    name="voteUnsubscribe", tag="Vote Subscriptions",
+    summary="Cancel a vote subscription (UNSUPPORTED on SVS)",
+    description="**Not available on SVS nodes.** This method is considered unstable in Agave/Solana and is therefore not enabled on our RPC infrastructure. Calls will be rejected. Use an alternative subscription method or polling-based pattern for this use case. Unsubscribe from vote notifications.",
+    params=[
+        {"name": "subscriptionId", "schema_doc": "Subscription id returned by voteSubscribe.",
+         "schema": s_int(desc="Subscription id.", example=24040), "required": True},
+    ],
+    params_example=[24040],
+    result_schema=_unsub_result(),
+    result_example=True,
+)
+
+
+WEBSOCKET_SERVERS = [
+    {"url": "wss://public.rpc.solanavibestation.com",  "description": "Public WebSocket endpoint (rate-limited)"},
+    {"url": "wss://lite.rpc.solanavibestation.com",    "description": "Lite tier WebSocket"},
+    {"url": "wss://basic.rpc.solanavibestation.com",   "description": "Basic tier WebSocket"},
+    {"url": "wss://ultra.rpc.solanavibestation.com",   "description": "Ultra tier WebSocket"},
+    {"url": "wss://elite.rpc.solanavibestation.com",   "description": "Elite tier WebSocket"},
+    {"url": "wss://epic.rpc.solanavibestation.com",    "description": "Epic tier WebSocket"},
+]
+
+WEBSOCKET_TAGS = [
+    {"name": "Account Subscriptions",   "description": "Subscribe to changes to a single account."},
+    {"name": "Block Subscriptions",     "description": "Subscribe to new blocks (currently unsupported on SVS)."},
+    {"name": "Logs Subscriptions",      "description": "Subscribe to transaction log lines."},
+    {"name": "Program Subscriptions",   "description": "Subscribe to changes to all accounts owned by a program."},
+    {"name": "Root Subscriptions",      "description": "Subscribe to root slot updates from the leader."},
+    {"name": "Signature Subscriptions", "description": "Subscribe to a single transaction signature's confirmation."},
+    {"name": "Slot Subscriptions",      "description": "Subscribe to slot processed/confirmed/rooted notifications."},
+    {"name": "Vote Subscriptions",      "description": "Subscribe to gossip votes (currently unsupported on SVS)."},
+]
+
 # ---------------------------------------------------------------------------
 # Spec assembly + emit.
 # ---------------------------------------------------------------------------
@@ -1612,6 +1892,36 @@ def main(out_dir):
 
     print(f"Wrote solana-rpc.yaml ({len(SOLANA_METHODS)} methods)")
     print(f"Wrote historical-rpc.yaml ({len(HISTORICAL_METHODS)} methods)")
+
+    websocket_paths = build_paths(WEBSOCKET_METHODS, base_path_prefix="", base_note=ENDPOINT_NOTE, websocket=True)
+
+    websocket_spec = assemble_spec(
+        title="Solana Vibe Station WebSocket RPC",
+        description=textwrap.dedent("""\
+            Solana JSON-RPC 2.0 methods invoked over a WebSocket connection.
+
+            Connect to a `wss://` server URL and exchange JSON-RPC envelopes
+            over the resulting socket. Subscribe methods return an integer
+            subscription id; the server then pushes notification messages
+            on the same socket. Unsubscribe with the matching unsubscribe
+            method.
+
+            Each method is documented as its own OpenAPI operation. The
+            POST shape shown is illustrative — the request body is the
+            JSON-RPC envelope you send over the WebSocket frame.
+        """),
+        version="1.0.0",
+        servers=WEBSOCKET_SERVERS,
+        tags=WEBSOCKET_TAGS,
+        paths=websocket_paths,
+    )
+
+    with open(f"{out_dir}/websocket-rpc.yaml", "w") as f:
+        f.write("# Generated by scripts/generate-rpc-specs.py — edit the generator, not this file.\n")
+        yaml.dump(websocket_spec, f, sort_keys=False, allow_unicode=True, width=10000)
+
+    print(f"Wrote websocket-rpc.yaml ({len(WEBSOCKET_METHODS)} methods)")
+
 
 
 if __name__ == "__main__":

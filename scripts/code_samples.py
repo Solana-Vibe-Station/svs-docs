@@ -1141,3 +1141,111 @@ def historical_code_samples_for(method: str, params: list[Any]) -> list[dict[str
         {"lang": "javascript", "label": "JavaScript", "source": js},
         {"lang": "rust",       "label": "Rust",       "source": rs},
     ]
+
+
+# ---------------------------------------------------------------------------
+# WebSocket code samples.
+#
+# WebSocket RPC speaks the same JSON-RPC envelope as HTTP RPC, but over a
+# persistent connection at a wss:// URL. The "cURL" sample shows a
+# wscat / websocat-style invocation since cURL itself doesn't speak the
+# WebSocket protocol cleanly. The Python / JavaScript / Rust samples use
+# each ecosystem's standard WebSocket client to open the connection,
+# send a JSON-RPC request, and read one notification.
+# ---------------------------------------------------------------------------
+
+WS_PUBLIC = "wss://public.rpc.solanavibestation.com"
+
+
+def _ws_curl(method, params):
+    body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
+    encoded = json.dumps(body, separators=(",", ":"))
+    encoded_for_shell = encoded.replace("'", "'\\''")
+    return (
+        "# cURL doesn't speak WebSocket — use `websocat` (or `wscat -c`).\n"
+        "# Install:  cargo install websocat   # or  npm install -g wscat\n"
+        f"echo '{encoded_for_shell}' | websocat {WS_PUBLIC}"
+    )
+
+
+def _ws_python(method, params):
+    return (
+        "import json, asyncio\n"
+        "import websockets  # pip install websockets\n"
+        "\n"
+        f"WS_URL = \"{WS_PUBLIC}\"\n"
+        "\n"
+        "async def main():\n"
+        "    async with websockets.connect(WS_URL) as ws:\n"
+        "        await ws.send(json.dumps({\n"
+        "            \"jsonrpc\": \"2.0\", \"id\": 1,\n"
+        f"            \"method\": \"{method}\",\n"
+        f"            \"params\": {json.dumps(params)}\n"
+        "        }))\n"
+        "        # First message: subscription confirmation with the id.\n"
+        "        print(json.loads(await ws.recv()))\n"
+        "        # Subsequent messages: notification frames pushed by the server.\n"
+        "        async for msg in ws:\n"
+        "            print(json.loads(msg))\n"
+        "            break  # remove to keep listening\n"
+        "\n"
+        "asyncio.run(main())"
+    )
+
+
+def _ws_javascript(method, params):
+    return (
+        "// In Node.js: npm install ws\n"
+        "// In a browser, the global WebSocket constructor is already available.\n"
+        "import WebSocket from \"ws\";\n"
+        "\n"
+        f"const ws = new WebSocket(\"{WS_PUBLIC}\");\n"
+        "\n"
+        "ws.on(\"open\", () => {\n"
+        "  ws.send(JSON.stringify({\n"
+        "    jsonrpc: \"2.0\", id: 1,\n"
+        f"    method: \"{method}\",\n"
+        f"    params: {json.dumps(params)}\n"
+        "  }));\n"
+        "});\n"
+        "ws.on(\"message\", (data) => {\n"
+        "  console.log(JSON.parse(data));\n"
+        "});"
+    )
+
+
+def _ws_rust(method, params):
+    return (
+        "// Cargo.toml:\n"
+        "//   tokio = { version = \"1\", features = [\"full\"] }\n"
+        "//   tokio-tungstenite = \"0.21\"\n"
+        "//   futures-util = \"0.3\"\n"
+        "//   serde_json = \"1\"\n"
+        "use futures_util::{SinkExt, StreamExt};\n"
+        "use tokio_tungstenite::{connect_async, tungstenite::Message};\n"
+        "\n"
+        "#[tokio::main]\n"
+        "async fn main() -> anyhow::Result<()> {\n"
+        f"    let (mut ws, _) = connect_async(\"{WS_PUBLIC}\").await?;\n"
+        "    let body = serde_json::json!({\n"
+        "        \"jsonrpc\": \"2.0\", \"id\": 1,\n"
+        f"        \"method\": \"{method}\",\n"
+        f"        \"params\": {json.dumps(params)}\n"
+        "    });\n"
+        "    ws.send(Message::Text(body.to_string())).await?;\n"
+        "    while let Some(msg) = ws.next().await {\n"
+        "        println!(\"{}\", msg?);\n"
+        "    }\n"
+        "    Ok(())\n"
+        "}"
+    )
+
+
+def websocket_code_samples_for(method, params):
+    """4-language code samples for a WebSocket RPC method."""
+    return [
+        {"lang": "shell",      "label": "cURL / websocat", "source": _ws_curl(method, params)},
+        {"lang": "python",     "label": "Python",          "source": _ws_python(method, params)},
+        {"lang": "javascript", "label": "JavaScript",      "source": _ws_javascript(method, params)},
+        {"lang": "rust",       "label": "Rust",            "source": _ws_rust(method, params)},
+    ]
