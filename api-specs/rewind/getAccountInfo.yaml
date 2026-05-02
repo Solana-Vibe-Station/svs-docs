@@ -4,13 +4,12 @@ info:
   description: |-
     Point-in-time historical account lookup against the Rewind archive.
 
-    Returns the on-chain state of `pubkey` at a chosen `(slot, writeVersion)` boundary. Wire-format matches Solana's standard `getAccountInfo`; the divergences (extra `rewindSlot` / `rewindWriteVersion` echo on the response, and the sub-slot positioning options) are documented as extensions below.
+    Returns the on-chain state of `pubkey` at a chosen historical position. Wire-format matches Solana's standard `getAccountInfo` so existing SDKs deserialize the response unchanged; the only addition is a `rewindSlot` field on the result so callers can see which slot the returned version actually lives at.
 
-    Three positioning modes are supported via the `config` object — exactly one must be used:
+    Two positioning modes are supported via the `config` object — exactly one must be used:
 
-    - **End-of-slot** (`slot: N`) — highest `(slot, writeVersion)` at or before slot N.
-    - **Explicit per-write** (`slot: N, writeVersion: W`) — highest `(slot, wv) <= (N, W)`.
-    - **Per-tx anchored** (`anchor: { signature, position }`) — resolves through the `transaction_positions` index.
+    - **End-of-slot** (`slot: N`) — returns the latest version of the account at or before slot N.
+    - **Per-transaction anchored** (`anchor: { signature, position }`) — positions immediately before or after a known transaction. Useful for "what state did this tx see?" / "what did it leave behind?" without needing to know the slot in advance.
 
     There is no "latest" mode — `slot` (or an `anchor` whose signature implies one) is always required.
   version: 1.0.0
@@ -38,16 +37,16 @@ paths:
   /:
     post:
       operationId: getAccountInfo
-      summary: getAccountInfo — Historical account lookup at a chosen (slot, writeVersion)
+      summary: getAccountInfo — Historical account lookup at a chosen slot or transaction
       tags:
       - Rewind
       description: |
-        Returns the state of `pubkey` at a chosen historical boundary. See the Rewind docs page for the full positioning vocabulary, error semantics, and extension fields.
+        Returns the state of `pubkey` at a chosen historical position.
 
         **Parameters**
 
         0. `pubkey` (required) — base58 account pubkey.
-        1. `config` (required) — positioning + encoding options. Exactly one of `slot`, `slot+writeVersion`, or `anchor` is required.
+        1. `config` (required) — positioning + encoding options. Either `slot` (end-of-slot) or `anchor` (per-transaction) must be set.
       requestBody:
         required: true
         content:
@@ -95,11 +94,7 @@ paths:
                         slot:
                           type: integer
                           format: int64
-                          description: End-of-slot boundary, or the slot of an explicit `writeVersion`. Required unless `anchor` is set; rejected when `anchor` is set.
-                        writeVersion:
-                          type: integer
-                          format: int64
-                          description: Explicit per-write_version boundary at `slot`. Returns the highest `(slot, wv) <= (slot, writeVersion)`. Mutually exclusive with `anchor`; requires `slot`.
+                          description: End-of-slot boundary. Required unless `anchor` is set; rejected when `anchor` is set.
                         anchor:
                           $ref: '#/components/schemas/Anchor'
                         encoding:
@@ -170,16 +165,6 @@ paths:
                   - anchor:
                       signature: <sig>
                       position: after
-              write_version_cursor:
-                summary: Explicit per-write_version cursor (e.g. resumed from getAccountChanges).
-                value:
-                  jsonrpc: '2.0'
-                  id: 1
-                  method: getAccountInfo
-                  params:
-                  - <pubkey>
-                  - slot: 250000000
-                    writeVersion: 4566
       responses:
         '200':
           description: Successful `getAccountInfo` response.
@@ -219,7 +204,6 @@ paths:
                     rentEpoch: 361
                     space: 0
                     rewindSlot: 249999998
-                    rewindWriteVersion: 1234
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -420,12 +404,12 @@ components:
         slot:
           type: integer
           format: int64
-          description: The resolved load slot. For end-of-slot and explicit-`writeVersion` calls this echoes the request's `slot`. For `anchor` calls this is the slot the signature resolves to.
+          description: The resolved load slot. For end-of-slot calls this echoes the request's `slot`. For `anchor` calls this is the slot the signature resolves to (which the caller does not have to know in advance).
           example: 250000000
     AccountInfo:
       type: object
       nullable: true
-      description: Account state, or `null` when no version exists at or before the resolved boundary.
+      description: Account state, or `null` when no version exists at or before the resolved slot.
       required:
       - lamports
       - owner
@@ -434,7 +418,6 @@ components:
       - rentEpoch
       - space
       - rewindSlot
-      - rewindWriteVersion
       properties:
         lamports:
           type: integer
@@ -466,11 +449,7 @@ components:
         rewindSlot:
           type: integer
           format: int64
-          description: Rewind extension. Actual slot of the version returned (≤ `context.slot`). Use to detect carry-forward versions and as a stable cache key.
-        rewindWriteVersion:
-          type: integer
-          format: int64
-          description: Rewind extension. Actual write_version of the version returned.
+          description: Rewind extension. Actual slot of the version returned (≤ `context.slot`). When this is less than the queried slot, it means the account wasn't written in the queried slot and the value carries forward from an earlier slot. Useful as a cache key and for audit / "data is from slot X" UI.
   responses:
     UnauthorizedError:
       description: Authentication required or invalid (terminated upstream at the SVS load balancer).
@@ -506,5 +485,4 @@ components:
       type: apiKey
       in: query
       name: api_key
-      description: Pass `?api_key=<api-key>` on the URL.
-security: *id001
+      description: Pass `?api_key=<api-key>` on th

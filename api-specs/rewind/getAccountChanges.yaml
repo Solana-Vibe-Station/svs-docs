@@ -2,13 +2,13 @@ openapi: 3.0.3
 info:
   title: 'Rewind RPC: getAccountChanges'
   description: |-
-    Per-write change history for one pubkey across `[fromSlot, toSlot]`, newest first. This is rewind's primary intra-slot read endpoint: each row represents a single account write with its exact `writeVersion` and (when known) the `txnSignature` that produced it.
+    Per-write change history for one pubkey across `[fromSlot, toSlot]`, newest first. Each row represents a single account write with the slot it landed in and (when known) the `txnSignature` that produced it.
 
     Default is metadata-only (no data blob). Set `includeData: true` to fetch and encode each entry's data with the same encodings as `getAccountInfo` (`jsonParsed` is **not** supported).
 
-    Pagination uses an opaque `(slot, writeVersion)` cursor in `before`, or per-tx via `anchor`. Cursors are stable: `account_versions` rows are write-once.
+    Pagination is cursor-based: pass back the response's `next` token as the `before` cursor on the next call to walk strictly older history. Or anchor pagination on a known transaction via the `anchor` field.
 
-    Unlike the single-point read endpoints, `getAccountChanges` does **not** refuse on partial coverage — MISSING/UNKNOWN gaps inside the requested range are surfaced inline via `value.gaps[]`.
+    Unlike the single-point read endpoints, this method does **not** refuse on partial coverage — MISSING/UNKNOWN gaps inside the requested range are surfaced inline via `value.gaps[]` so walkers can see discontinuities in their stream.
   version: 1.0.0
   contact:
     name: Solana Vibe Station
@@ -38,7 +38,7 @@ paths:
       tags:
       - Rewind
       description: |
-        Paginated per-write change history for one pubkey in `[fromSlot, toSlot]`, newest first.
+        Paginated change history for one pubkey in `[fromSlot, toSlot]`, newest first.
 
         **Parameters**
 
@@ -116,7 +116,8 @@ paths:
                         dataSlice:
                           $ref: '#/components/schemas/DataSlice'
                         before:
-                          $ref: '#/components/schemas/BeforeCursor'
+                          type: string
+                          description: Resume cursor. Pass back the value from a prior response's `value.next` to continue strictly older. Mutually exclusive with `anchor`.
                         anchor:
                           $ref: '#/components/schemas/Anchor'
             examples:
@@ -192,7 +193,9 @@ paths:
                               items:
                                 $ref: '#/components/schemas/Change'
                             next:
-                              $ref: '#/components/schemas/BeforeCursor'
+                              type: string
+                              nullable: true
+                              description: Opaque resume cursor. `null` when the last page has been returned; otherwise pass back as `before` on the next call.
                             truncatedByBytes:
                               type: boolean
                               description: True if the 10 MiB response cap was reached. `next` is overridden to point at the first entry that didn't fit.
@@ -211,7 +214,6 @@ paths:
                   value:
                     changes:
                     - slot: 250000123
-                      writeVersion: 4567
                       lamports: 9876543210
                       owner: <base58>
                       executable: false
@@ -220,9 +222,7 @@ paths:
                       dataHash: a1b2c3...
                       txnSignature: <base58>
                       dataChanged: true
-                    next:
-                      slot: 250000050
-                      writeVersion: 12
+                    next: eyJzbG90IjoyNTAwMDAwNTAsIndyaXRlVmVyc2lvbiI6MTJ9
                     truncatedByBytes: false
                     gaps:
                     - fromSlot: 250000200
@@ -266,7 +266,7 @@ paths:
             });
             const { result } = await res.json();
             for (const c of result.value.changes) {
-              if (c.dataChanged) console.log(c.slot, c.writeVersion, c.txnSignature);
+              if (c.dataChanged) console.log(c.slot, c.txnSignature);
             }
             if (!result.value.next) break;
             before = result.value.next;
@@ -291,7 +291,7 @@ paths:
               ).json()
               for c in resp["result"]["value"]["changes"]:
                   if c["dataChanged"]:
-                      print(c["slot"], c["writeVersion"], c.get("txnSignature"))
+                      print(c["slot"], c.get("txnSignature"))
               before = resp["result"]["value"].get("next")
               if before is None:
                   break
@@ -362,9 +362,9 @@ components:
       required:
       - signature
       description: |-
-        Per-tx resume cursor. Resolved through `transaction_positions` and converted to a `(slot, writeVersion)` cursor:
-        - `position: "before"` (default) — page starts with the most recent write strictly older than the named tx's first write.
-        - `position: "after"` — page starts with the named tx's last write itself (inclusive), then walks older.
+        Per-tx resume cursor. The named transaction is looked up in the archive index and used as the boundary:
+        - `position: "before"` (default) — page starts with the most recent write strictly older than the named tx.
+        - `position: "after"` — page starts with the named tx's own writes (inclusive), then walks older.
       properties:
         signature:
           type: string
@@ -374,20 +374,6 @@ components:
           - before
           - after
           default: before
-    BeforeCursor:
-      type: object
-      nullable: true
-      description: Opaque resume cursor at `(slot, writeVersion)` granularity. Pass back `value.next` from a prior response on the next call. Mutually exclusive with `anchor`.
-      required:
-      - slot
-      - writeVersion
-      properties:
-        slot:
-          type: integer
-          format: int64
-        writeVersion:
-          type: integer
-          format: int64
     RewindContext:
       type: object
       required:
@@ -405,7 +391,6 @@ components:
       type: object
       required:
       - slot
-      - writeVersion
       - lamports
       - owner
       - executable
@@ -418,10 +403,6 @@ components:
           type: integer
           format: int64
           description: Slot the write committed in.
-        writeVersion:
-          type: integer
-          format: int64
-          description: Bank's monotonic per-slot write index. Combined with `slot`, identifies the row.
         lamports:
           type: integer
           format: int64

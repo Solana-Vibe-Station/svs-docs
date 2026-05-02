@@ -2,9 +2,9 @@ openapi: 3.0.3
 info:
   title: 'Rewind RPC: getMultipleAccounts'
   description: |-
-    Batched point-in-time historical account lookup. Returns up to `max_multi_accounts` accounts at one shared `(slot, writeVersion)` boundary. Mirrors Solana's `getMultipleAccounts`.
+    Batched point-in-time historical account lookup. Returns up to `max_multi_accounts` accounts at one shared historical position. Mirrors Solana's `getMultipleAccounts`.
 
-    Accepts the same positioning options as `getAccountInfo` — `slot`, `slot+writeVersion`, or `anchor: { signature, position }`. The resolved `(slot, writeVersion)` boundary is applied uniformly to every pubkey in the batch; an anchor signature is resolved exactly once.
+    Accepts the same positioning options as `getAccountInfo` — either an end-of-slot `slot: N` or a per-transaction `anchor: { signature, position }`. The resolved position is applied uniformly to every pubkey in the batch; an anchor signature is resolved exactly once.
 
     Response includes a hard byte cap (default 10 MiB). When the cap is reached, already-included entries remain populated and all later entries are emitted as `null`; `truncatedByBytes` is set to `true`. Resubmit the truncated tail with a smaller batch.
   version: 1.0.0
@@ -36,14 +36,14 @@ paths:
       tags:
       - Rewind
       description: |
-        Returns the state of multiple accounts at one shared historical boundary.
+        Returns the state of multiple accounts at one shared historical position.
 
         **Parameters**
 
         0. `pubkeys` (required) — array of base58 pubkeys, length 1..=`max_multi_accounts`.
         1. `config` (required) — same shape as `getAccountInfo`'s config; one positioning mode required.
 
-        Per-entry `rewindSlot` / `rewindWriteVersion` are independently resolved per pubkey: each entry's `rewindSlot` is the actual slot where its returned version lives (typically ≤ `context.slot`) and may differ between entries.
+        Per-entry `rewindSlot` is independently resolved per pubkey: each entry's `rewindSlot` is the actual slot where its returned version lives (typically ≤ `context.slot`) and may differ between entries.
       requestBody:
         required: true
         content:
@@ -90,10 +90,7 @@ paths:
                         slot:
                           type: integer
                           format: int64
-                        writeVersion:
-                          type: integer
-                          format: int64
-                          description: Mutually exclusive with `anchor`. Requires `slot`.
+                          description: End-of-slot boundary. Required unless `anchor` is set.
                         anchor:
                           $ref: '#/components/schemas/Anchor'
                         encoding:
@@ -177,7 +174,6 @@ paths:
                     rentEpoch: 361
                     space: 0
                     rewindSlot: 249999998
-                    rewindWriteVersion: 1234
                   - null
                   truncatedByBytes: false
         '401':
@@ -346,7 +342,6 @@ components:
       - rentEpoch
       - space
       - rewindSlot
-      - rewindWriteVersion
       properties:
         lamports:
           type: integer
@@ -373,9 +368,7 @@ components:
         rewindSlot:
           type: integer
           format: int64
-        rewindWriteVersion:
-          type: integer
-          format: int64
+          description: Rewind extension. Actual slot of the version returned (≤ `context.slot`). Less than `context.slot` means the value carries forward from an earlier slot.
   responses:
     UnauthorizedError:
       description: Authentication required or invalid.

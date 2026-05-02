@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: 'Rewind RPC: getAccountDiff'
   description: |-
-    Two-point structural diff for a single account. **Each side is positioned independently** — both can be end-of-slot, both sub-slot anchored, or one of each.
+    Two-point structural diff for a single account. **Each side is positioned independently** — both can be end-of-slot, both can be transaction-anchored, or one of each.
 
     Returns the AccountInfo at each side plus a structural summary. No byte-level data diff is computed server-side; clients can compute it cheaply from both blobs.
 
@@ -38,7 +38,7 @@ paths:
       tags:
       - Rewind
       description: |
-        Two-point diff for a single account. Each side accepts the same three positioning modes as `getAccountInfo` (`slot`, `slot+writeVersion`, or `anchor`). Fields are suffixed `A`/`B` so both sides coexist in one config object.
+        Two-point diff for a single account. Each side accepts the same positioning modes as `getAccountInfo` — end-of-slot via `slotA`/`slotB`, or per-transaction via `anchorA`/`anchorB`. Fields are suffixed `A`/`B` so both sides coexist in one config object.
 
         **Parameters**
 
@@ -86,19 +86,13 @@ paths:
                         slotA:
                           type: integer
                           format: int64
-                          description: End-of-slot at A. Required for end-of-slot or explicit-`writeVersionA` modes on side A.
-                        writeVersionA:
-                          type: integer
-                          format: int64
-                          description: Explicit per-write boundary at `slotA`. Mutually exclusive with `anchorA`.
+                          description: End-of-slot at A. Required unless `anchorA` is set.
                         anchorA:
                           $ref: '#/components/schemas/Anchor'
                         slotB:
                           type: integer
                           format: int64
-                        writeVersionB:
-                          type: integer
-                          format: int64
+                          description: End-of-slot at B. Required unless `anchorB` is set.
                         anchorB:
                           $ref: '#/components/schemas/Anchor'
                         encoding:
@@ -190,7 +184,6 @@ paths:
                       rentEpoch: 361
                       space: 165
                       rewindSlot: 249999998
-                      rewindWriteVersion: 4471
                     b:
                       lamports: 112345
                       owner: <base58>
@@ -201,7 +194,6 @@ paths:
                       rentEpoch: 361
                       space: 165
                       rewindSlot: 250100000
-                      rewindWriteVersion: 8821
                     diff:
                       lamportsDelta: 12345
                       ownerChanged: false
@@ -357,7 +349,6 @@ components:
       - rentEpoch
       - space
       - rewindSlot
-      - rewindWriteVersion
       properties:
         lamports:
           type: integer
@@ -384,9 +375,7 @@ components:
         rewindSlot:
           type: integer
           format: int64
-        rewindWriteVersion:
-          type: integer
-          format: int64
+          description: Rewind extension. Actual slot of the version returned for this side. May predate the queried position when the value carries forward.
     Diff:
       type: object
       nullable: true

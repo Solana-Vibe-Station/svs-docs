@@ -2,15 +2,14 @@ openapi: 3.0.3
 info:
   title: 'Rewind RPC: simulateHistoricalTransaction'
   description: |-
-    Runs a transaction against the Rewind archive's account state at a specified slot. Mirrors Solana's `simulateTransaction` response shape, pinned to historical state.
+    Runs a transaction against the Rewind archive's account state at a specified historical position. Mirrors Solana's `simulateTransaction` response shape, pinned to historical state.
 
     Use cases: post-mortem analysis, debugging failed txs against the exact pre-state they saw, deterministic-replay validation, opportunity research at known historical moments.
 
-    **Position resolution.** The handler resolves `(query_slot, load_slot, write_version)` from the request:
+    **Position resolution.** Two positioning modes are supported:
 
-    1. **`anchor` set** — signature is resolved to its `(slot, first_wv, last_wv)` triple. `query_slot = slot`, `load_slot = slot`, `write_version = first_wv-1` (before) or `last_wv` (after). `preStateSlot` is ignored.
-    2. **`writeVersion` + `slot`** — `query_slot = slot`, `load_slot = slot`, `write_version` as given. `preStateSlot` is ignored.
-    3. **`slot` only** — `query_slot = slot`, `load_slot = preStateSlot ?? slot`, `write_version = u64::MAX` (end-of-slot).
+    1. **`anchor` set** — signature is looked up in the archive index and used as the boundary. `query_slot` and `load_slot` are derived from the signature; `position: "before"` loads state the named tx itself read, `position: "after"` loads state immediately after the named tx finished writing. `preStateSlot` is ignored.
+    2. **`slot` only** — `query_slot = slot`, `load_slot = preStateSlot ?? slot` (end-of-slot).
 
     ALTs always resolve at `query_slot` regardless of which path was taken.
 
@@ -96,16 +95,12 @@ paths:
                           type: integer
                           format: int64
                           description: Required unless `anchor` is provided. Slot at which to load ALTs and account state.
-                        writeVersion:
-                          type: integer
-                          format: int64
-                          description: Explicit per-write_version boundary at `slot`. Mutually exclusive with `anchor`.
                         anchor:
                           $ref: '#/components/schemas/Anchor'
                         preStateSlot:
                           type: integer
                           format: int64
-                          description: Advanced — load non-ALT account state at this slot instead of `slot`. Common pattern `slot - 1` for "as if this tx ran at slot start". Ignored when `writeVersion` or `anchor` is set.
+                          description: Advanced — load non-ALT account state at this slot instead of `slot`. Common pattern `slot - 1` for "as if this tx ran at slot start". Ignored when `anchor` is set.
                         encoding:
                           type: string
                           enum:
@@ -173,17 +168,6 @@ paths:
                     anchor:
                       signature: <base58-sig>
                       position: before
-              explicit_write_version:
-                summary: Explicit write-version boundary (advanced).
-                value:
-                  jsonrpc: '2.0'
-                  id: 1
-                  method: simulateHistoricalTransaction
-                  params:
-                  - <base64-tx>
-                  - slot: 250000000
-                    writeVersion: 12345
-                    encoding: base64
       responses:
         '200':
           description: Successful simulation. Failed transactions still return logs and `unitsConsumed`; the application-level error is reported in `result.value.err`.
@@ -239,7 +223,6 @@ paths:
                         stackHeight: 2
                     rewindSlot: 250000000
                     rewindLoadSlot: 250000000
-                    rewindLoadWriteVersion: 18446744073709551615
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -418,7 +401,6 @@ components:
       - unitsConsumed
       - rewindSlot
       - rewindLoadSlot
-      - rewindLoadWriteVersion
       properties:
         err:
           type: object
@@ -458,10 +440,6 @@ components:
           type: integer
           format: int64
           description: Rewind extension. Slot at which non-ALT account state was loaded; equals `rewindSlot` unless `preStateSlot` overrode it.
-        rewindLoadWriteVersion:
-          type: integer
-          format: int64
-          description: Rewind extension. Write_version used. `2^64 - 1` means end-of-slot.
   responses:
     UnauthorizedError:
       description: Authentication required or invalid.
