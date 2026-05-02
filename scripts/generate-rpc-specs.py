@@ -1806,11 +1806,11 @@ SOLANA_SERVERS = [
 ]
 
 HISTORICAL_SERVERS = [
-    {"url": "https://public.rpc.solanavibestation.com",  "description": "Public endpoint, /historical path (rate-limited)"},
-    {"url": "https://basic.rpc.solanavibestation.com",   "description": "Basic tier, /historical path"},
-    {"url": "https://ultra.rpc.solanavibestation.com",   "description": "Ultra tier, /historical path"},
-    {"url": "https://elite.rpc.solanavibestation.com",   "description": "Elite tier, /historical path"},
-    {"url": "https://epic.rpc.solanavibestation.com",    "description": "Epic tier, /historical path"},
+    {"url": "https://public.rpc.solanavibestation.com/historical",  "description": "Public endpoint (rate-limited, no auth)"},
+    {"url": "https://basic.rpc.solanavibestation.com/historical",   "description": "Basic tier"},
+    {"url": "https://ultra.rpc.solanavibestation.com/historical",   "description": "Ultra tier"},
+    {"url": "https://elite.rpc.solanavibestation.com/historical",   "description": "Elite tier"},
+    {"url": "https://epic.rpc.solanavibestation.com/historical",    "description": "Epic tier"},
 ]
 
 SOLANA_TAGS = [
@@ -1854,7 +1854,11 @@ def assemble_spec(*, title, description, version, servers, tags, paths):
 
 def main(out_dir):
     solana_paths = build_paths(SOLANA_METHODS, base_path_prefix="", base_note=ENDPOINT_NOTE)
-    historical_paths = build_paths(HISTORICAL_METHODS, base_path_prefix="/historical", base_note=HISTORICAL_ENDPOINT_NOTE, historical=True)
+    # Historical paths drop the /historical prefix — that lives in the server
+    # URL now so the rendered path is just the method name (matches the
+    # solana-rpc convention). Real production POSTs to /historical with the
+    # method passed in the JSON-RPC body, exactly like the main RPC.
+    historical_paths = build_paths(HISTORICAL_METHODS, base_path_prefix="", base_note=HISTORICAL_ENDPOINT_NOTE, historical=True)
 
     solana_spec = assemble_spec(
         title="Solana Vibe Station RPC",
@@ -1875,9 +1879,14 @@ def main(out_dir):
             Historical Solana JSON-RPC 2.0 endpoints hosted by Solana Vibe Station,
             served from long-term ledger storage.
 
-            All requests POST to **`/historical`** on the chosen server URL. The
-            per-method paths shown here (e.g. `/historical/getBlock`) are
-            documentation groupings so each operation renders separately.
+            The historical archive lives at the `/historical` path of every SVS
+            server, which is baked into each `servers[]` entry below. The
+            actual production URL is therefore
+            `https://<tier>.rpc.solanavibestation.com/historical` — every
+            request POSTs to that URL with the method name in the JSON-RPC
+            request body, exactly like the main RPC. The per-method paths
+            shown in the operations list (e.g. `/getBlock`) are documentation
+            groupings so GitBook can render each method as its own page.
         """),
         version="1.0.0", servers=HISTORICAL_SERVERS, tags=HISTORICAL_TAGS, paths=historical_paths,
     )

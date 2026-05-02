@@ -6,9 +6,14 @@ info:
     Historical Solana JSON-RPC 2.0 endpoints hosted by Solana Vibe Station,
     served from long-term ledger storage.
 
-    All requests POST to **`/historical`** on the chosen server URL. The
-    per-method paths shown here (e.g. `/historical/getBlock`) are
-    documentation groupings so each operation renders separately.
+    The historical archive lives at the `/historical` path of every SVS
+    server, which is baked into each `servers[]` entry below. The
+    actual production URL is therefore
+    `https://<tier>.rpc.solanavibestation.com/historical` — every
+    request POSTs to that URL with the method name in the JSON-RPC
+    request body, exactly like the main RPC. The per-method paths
+    shown in the operations list (e.g. `/getBlock`) are documentation
+    groupings so GitBook can render each method as its own page.
   version: 1.0.0
   contact:
     name: Solana Vibe Station
@@ -17,16 +22,16 @@ info:
     name: MIT OR Apache-2.0
     url: https://opensource.org/licenses/MIT
 servers:
-- url: https://public.rpc.solanavibestation.com
-  description: Public endpoint, /historical path (rate-limited)
-- url: https://basic.rpc.solanavibestation.com
-  description: Basic tier, /historical path
-- url: https://ultra.rpc.solanavibestation.com
-  description: Ultra tier, /historical path
-- url: https://elite.rpc.solanavibestation.com
-  description: Elite tier, /historical path
-- url: https://epic.rpc.solanavibestation.com
-  description: Epic tier, /historical path
+- url: https://public.rpc.solanavibestation.com/historical
+  description: Public endpoint (rate-limited, no auth)
+- url: https://basic.rpc.solanavibestation.com/historical
+  description: Basic tier
+- url: https://ultra.rpc.solanavibestation.com/historical
+  description: Ultra tier
+- url: https://elite.rpc.solanavibestation.com/historical
+  description: Elite tier
+- url: https://epic.rpc.solanavibestation.com/historical
+  description: Epic tier
 tags:
 - name: Block
   description: Historical block lookups.
@@ -35,7 +40,7 @@ tags:
 - name: Slots
   description: Historical slot range.
 paths:
-  /historical/getBlock:
+  /getBlock:
     post:
       operationId: getBlock
       summary: getBlock — Historical block by slot
@@ -240,7 +245,7 @@ paths:
           use solana_transaction_status::UiTransactionEncoding;
           let block = client.get_block_with_encoding(416997240, UiTransactionEncoding::Json)?;
           println!("blockhash={} txs={}", block.blockhash, block.transactions.len());
-  /historical/getBlocks:
+  /getBlocks:
     post:
       operationId: getBlocks
       summary: getBlocks — Historical confirmed blocks in a range
@@ -401,7 +406,7 @@ paths:
 
           let blocks = client.get_blocks(416997230, Some(416997240))?;
           println!("{:?}", blocks);
-  /historical/getBlocksWithLimit:
+  /getBlocksWithLimit:
     post:
       operationId: getBlocksWithLimit
       summary: getBlocksWithLimit — Historical confirmed blocks starting at slot
@@ -564,7 +569,7 @@ paths:
 
           let blocks = client.get_blocks_with_limit(416997230, 10)?;
           println!("{:?}", blocks);
-  /historical/getBlockTime:
+  /getBlockTime:
     post:
       operationId: getBlockTime
       summary: getBlockTime — Historical block production time
@@ -690,7 +695,7 @@ paths:
           let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
 
           println!("{}", client.get_block_time(416997240)?);
-  /historical/getFirstAvailableBlock:
+  /getFirstAvailableBlock:
     post:
       operationId: getFirstAvailableBlock
       summary: getFirstAvailableBlock — Lowest historical block
@@ -808,7 +813,7 @@ paths:
           let resp: serde_json::Value = reqwest::blocking::Client::new()
               .post("https://public.rpc.solanavibestation.com/historical").json(&body).send()?.json()?;
           println!("{}", resp["result"]);
-  /historical/getSlot:
+  /getSlot:
     post:
       operationId: getSlot
       summary: getSlot — Highest historical slot
@@ -940,7 +945,7 @@ paths:
           let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
 
           println!("{}", client.get_slot()?);
-  /historical/getSignaturesForAddress:
+  /getSignaturesForAddress:
     post:
       operationId: getSignaturesForAddress
       summary: getSignaturesForAddress — Historical signatures for an address
@@ -1140,7 +1145,7 @@ paths:
           let cfg = GetConfirmedSignaturesForAddress2Config { limit: Some(10), ..Default::default() };
           let sigs = client.get_signatures_for_address_with_config(&address, cfg)?;
           for s in &sigs { println!("{} {}", s.signature, s.slot); }
-  /historical/getSignatureStatuses:
+  /getSignatureStatuses:
     post:
       operationId: getSignatureStatuses
       summary: getSignatureStatuses — Historical signature statuses
@@ -1335,7 +1340,7 @@ paths:
           let sigs = [Signature::from_str("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")?];
           let statuses = client.get_signature_statuses_with_history(&sigs)?;
           println!("{:?}", statuses.value);
-  /historical/getTransaction:
+  /getTransaction:
     post:
       operationId: getTransaction
       summary: getTransaction — Historical transaction by signature
