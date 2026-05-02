@@ -28,21 +28,31 @@ jobs:
       - name: Validate SVS API spec
         run: redocly lint api-specs/svs-api.yaml --skip-rule no-unused-components
 
-      - name: Validate Solana RPC spec
-        run: redocly lint api-specs/solana-rpc.yaml --skip-rule no-unused-components
-
-      - name: Validate Historical RPC spec
-        run: redocly lint api-specs/historical-rpc.yaml --skip-rule no-unused-components
-
-      - name: Validate WebSocket RPC spec
-        run: redocly lint api-specs/websocket-rpc.yaml --skip-rule no-unused-components
-
-      - name: Summary
-        if: always()
+      - name: Validate per-method Solana RPC specs
         run: |
-          echo "## OpenAPI Validation Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Spec | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| SVS API | ${{ steps.validate-svs.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Solana RPC | ${{ steps.validate-rpc.outcome || '✅' }} |" >> $G
+          fail=0
+          for f in api-specs/solana-rpc/*.yaml; do
+            echo "=== $f ==="
+            redocly lint "$f" --skip-rule no-unused-components || fail=1
+          done
+          exit "$fail"
+
+      - name: Validate per-method Historical RPC specs
+        run: |
+          fail=0
+          for f in api-specs/historical/*.yaml; do
+            echo "=== $f ==="
+            redocly lint "$f" --skip-rule no-unused-components || fail=1
+          done
+          exit "$fail"
+
+      - name: Validate per-method WebSocket RPC specs
+        run: |
+          fail=0
+          for f in api-specs/websocket-rpc/*.yaml; do
+            echo "=== $f ==="
+            redocly lint "$f" --skip-rule no-unused-components || fail=1
+          done
+          exit "$fail"
+
+      - name: Summar

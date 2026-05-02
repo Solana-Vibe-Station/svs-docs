@@ -268,20 +268,10 @@ def build_operation(method, base_note=ENDPOINT_NOTE, historical=False, websocket
 
 
 def build_paths(methods, base_path_prefix="", base_note=ENDPOINT_NOTE, historical=False, websocket=False):
-    """Build a paths map.
-
-    `base_path_prefix` joins to the method name to form each path key.
-    If the prefix ends with `#` (the historical case), no separator
-    slash is inserted — the method name is appended directly to make
-    a fragment-based path like `/historical#getBlock`. Otherwise we
-    insert `/` so paths look like `/getBlock`.
-    """
+    """Build a paths map: prefix + method name for each method."""
     paths = _OD()
     for m in methods:
-        if base_path_prefix.endswith("#"):
-            path = f"{base_path_prefix}{m['name']}"
-        else:
-            path = f"{base_path_prefix}/{m['name']}"
+        path = f"{base_path_prefix}/{m['name']}"
         paths[path] = _OD([("post", build_operation(m, base_note=base_note, historical=historical, websocket=websocket))])
     return paths
 
@@ -2165,91 +2155,90 @@ def assemble_spec(*, title, description, version, servers, tags, paths):
 
 
 def main(out_dir):
-    solana_paths = build_paths(SOLANA_METHODS, base_path_prefix="", base_note=ENDPOINT_NOTE)
-    # Historical methods all live at the single path /historical on the
-    # SVS server. OpenAPI 3.0 requires unique (path, verb) keys, so we
-    # use a fragment-based path key per method: `/historical#getBlock`,
-    # `/historical#getBlocks`, etc. The fragment is part of the path
-    # KEY in the spec but is stripped by every HTTP client before the
-    # request is sent (fragments are RFC 3986 client-side identifiers).
-    # Net effect: each method is its own embeddable OpenAPI operation,
-    # the actual HTTP request goes to POST /historical, and the per-
-    # method discriminator is the JSON-RPC `method` field in the body.
-    historical_paths = build_paths(HISTORICAL_METHODS, base_path_prefix="/historical#", base_note=HISTORICAL_ENDPOINT_NOTE, historical=True)
+    """Emit one OpenAPI spec per JSON-RPC method.
 
-    solana_spec = assemble_spec(
-        title="Solana Vibe Station RPC",
-        description=textwrap.dedent("""\
-            Solana JSON-RPC 2.0 endpoints hosted by Solana Vibe Station.
+    Per-method spec files keep OpenAPI's `(path, verb)` uniqueness rule
+    trivially satisfied — each spec contains exactly one operation, so the
+    displayed path is the real production HTTP path verbatim:
+      - solana-rpc methods POST to `/`
+      - historical methods POST to `/historical`
+      - websocket-rpc methods are JSON-RPC frames over `/` of a wss:// URL
 
-            Each method is documented as its own OpenAPI operation. In production all
-            requests POST to the **root path** (`/`) of the chosen server URL — the
-            method shown in the path (e.g. `/getBalance`) is a documentation grouping
-            so each operation can be embedded individually in the docs.
-        """),
-        version="2.0.0", servers=SOLANA_SERVERS, tags=SOLANA_TAGS, paths=solana_paths,
-    )
+    Output layout:
+      api-specs/solana-rpc/<methodName>.yaml      (52 files)
+      api-specs/historical/<methodName>.yaml      (10 files)
+      api-specs/websocket-rpc/<methodName>.yaml   (16 files)
+      api-specs/svs-api.yaml                       (4 SVS REST endpoints — not split)
 
-    historical_spec = assemble_spec(
-        title="Solana Vibe Station Historical RPC",
-        description=textwrap.dedent("""\
-            Historical Solana JSON-RPC 2.0 methods hosted by Solana Vibe Station,
-            served from long-term ledger storage.
+    Register each per-method spec separately in GitBook (Sidebar -> OpenAPI
+    -> Add specification -> URL pointing at the raw GitHub URL of the file).
+    """
+    groups = [
+        {
+            "dir": "solana-rpc",
+            "methods": SOLANA_METHODS,
+            "real_path": "/",
+            "servers": SOLANA_SERVERS,
+            "title_prefix": "Solana RPC",
+            "kwargs": {"historical": False, "websocket": False},
+            "desc": (
+                "`{name}` Solana JSON-RPC method. All methods POST to the root "
+                "path (`/`) of the chosen SVS RPC server with the method name "
+                "in the JSON-RPC request body."
+            ),
+        },
+        {
+            "dir": "historical",
+            "methods": HISTORICAL_METHODS,
+            "real_path": "/historical",
+            "servers": HISTORICAL_SERVERS,
+            "title_prefix": "Historical RPC",
+            "kwargs": {"historical": True, "websocket": False},
+            "desc": (
+                "`{name}` invoked over the SVS historical JSON-RPC archive. "
+                "All historical methods POST to `/historical` with the method "
+                "name in the JSON-RPC request body, exactly like the main RPC."
+            ),
+        },
+        {
+            "dir": "websocket-rpc",
+            "methods": WEBSOCKET_METHODS,
+            "real_path": "/",
+            "servers": WEBSOCKET_SERVERS,
+            "title_prefix": "WebSocket RPC",
+            "kwargs": {"historical": False, "websocket": True},
+            "desc": (
+                "`{name}` invoked over a WebSocket connection (`wss://`) to the "
+                "chosen SVS server. The JSON-RPC envelope shown is what you send "
+                "in a WebSocket frame after opening the connection."
+            ),
+        },
+    ]
 
-            **Every historical method POSTs to the same path: `/historical`.**
-            The method name is passed in the JSON-RPC request body exactly
-            like the main Solana RPC.
+    summary = []
+    for g in groups:
+        group_dir = os.path.join(out_dir, g["dir"])
+        os.makedirs(group_dir, exist_ok=True)
+        count = 0
+        for m in g["methods"]:
+            op = build_operation(m, **g["kwargs"])
+            method_spec = assemble_spec(
+                title=f"{g['title_prefix']}: {m['name']}",
+                description=g["desc"].format(name=m["name"]),
+                version="1.0.0",
+                servers=g["servers"],
+                tags=[{"name": m["tag"], "description": f"{g['title_prefix']} {m['tag'].lower()} method."}],
+                paths=_OD([(g["real_path"], _OD([("post", op)]))]),
+            )
+            path = os.path.join(group_dir, f"{m['name']}.yaml")
+            with open(path, "w") as f:
+                f.write("# Generated by scripts/generate-rpc-specs.py — edit the generator, not this file.\n")
+                yaml.dump(method_spec, f, sort_keys=False, allow_unicode=True, width=10000)
+            count += 1
+        summary.append((g["dir"], count, g["real_path"]))
 
-            The path keys you see below (e.g. `/historical#getBlock`) include
-            an OpenAPI fragment so each method renders as its own embeddable
-            operation page. **The fragment is documentation-only — every
-            HTTP client strips fragments before sending, so the actual
-            request goes to `POST /historical` regardless of which page
-            you copy the example from.**
-        """),
-        version="1.0.0", servers=HISTORICAL_SERVERS, tags=HISTORICAL_TAGS, paths=historical_paths,
-    )
-
-    with open(f"{out_dir}/solana-rpc.yaml", "w") as f:
-        f.write("# Generated by scripts/generate-rpc-specs.py — edit the generator, not this file.\n")
-        yaml.dump(solana_spec, f, sort_keys=False, allow_unicode=True, width=10000)
-
-    with open(f"{out_dir}/historical-rpc.yaml", "w") as f:
-        f.write("# Generated by scripts/generate-rpc-specs.py — edit the generator, not this file.\n")
-        yaml.dump(historical_spec, f, sort_keys=False, allow_unicode=True, width=10000)
-
-    print(f"Wrote solana-rpc.yaml ({len(SOLANA_METHODS)} methods)")
-    print(f"Wrote historical-rpc.yaml ({len(HISTORICAL_METHODS)} methods)")
-
-    websocket_paths = build_paths(WEBSOCKET_METHODS, base_path_prefix="", base_note=ENDPOINT_NOTE, websocket=True)
-
-    websocket_spec = assemble_spec(
-        title="Solana Vibe Station WebSocket RPC",
-        description=textwrap.dedent("""\
-            Solana JSON-RPC 2.0 methods invoked over a WebSocket connection.
-
-            Connect to a `wss://` server URL and exchange JSON-RPC envelopes
-            over the resulting socket. Subscribe methods return an integer
-            subscription id; the server then pushes notification messages
-            on the same socket. Unsubscribe with the matching unsubscribe
-            method.
-
-            Each method is documented as its own OpenAPI operation. The
-            POST shape shown is illustrative — the request body is the
-            JSON-RPC envelope you send over the WebSocket frame.
-        """),
-        version="1.0.0",
-        servers=WEBSOCKET_SERVERS,
-        tags=WEBSOCKET_TAGS,
-        paths=websocket_paths,
-    )
-
-    with open(f"{out_dir}/websocket-rpc.yaml", "w") as f:
-        f.write("# Generated by scripts/generate-rpc-specs.py — edit the generator, not this file.\n")
-        yaml.dump(websocket_spec, f, sort_keys=False, allow_unicode=True, width=10000)
-
-    print(f"Wrote websocket-rpc.yaml ({len(WEBSOCKET_METHODS)} methods)")
-
+    for name, count, real_path in summary:
+        print(f"Wrote {count} {name}/*.yaml specs (path={real_path})")
 
 
 if __name__ == "__main__":
