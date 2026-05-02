@@ -220,8 +220,6 @@ paths:
                     space: 0
                     rewindSlot: 249999998
                     rewindWriteVersion: 1234
-        '400':
-          $ref: '#/components/responses/JsonRpcError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -474,12 +472,6 @@ components:
           format: int64
           description: Rewind extension. Actual write_version of the version returned.
   responses:
-    JsonRpcError:
-      description: Application-level JSON-RPC error (HTTP 200 with `error` populated; this slot is documented for clarity).
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/JsonRpcErrorResponse'
     UnauthorizedError:
       description: Authentication required or invalid (terminated upstream at the SVS load balancer).
       content:
@@ -516,4 +508,3 @@ components:
       name: api_key
       description: Pass `?api_key=<api-key>` on the URL.
 security: *id001
-1

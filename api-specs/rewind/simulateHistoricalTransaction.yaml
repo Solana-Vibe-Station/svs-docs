@@ -424,19 +424,17 @@ components:
           type: object
           nullable: true
           additionalProperties: true
-          description: '`null` on success; on failure, a structured `TransactionError` JSON object matching Solana''s wire shape (e.g. `{"InstructionError":[0,{"Custom":1}]}`). Some Solana TransactionError variants are bare strings rather than objects; clients should accept either shape.'
+          description: '`null` on success; on failure, a structured `TransactionError` matching Solana''s wire shape.'
         logs:
           type: array
+          description: Program log stream from execution.
           items:
             type: string
-          description: Program log stream from execution.
         accounts:
           type: array
-          nullable: true
-          description: Post-state of the addresses listed in `config.accounts.addresses`, in order. `null` for addresses the tx didn't touch or that don't exist at the load position. Whole field is `null` when `config.accounts` is absent.
+          description: Post-state of the addresses listed in `config.accounts.addresses`, in order. Entries the tx didn't touch are emitted as null in the wire format.
           items:
             type: object
-            nullable: true
             additionalProperties: true
         unitsConsumed:
           type: integer
@@ -444,12 +442,11 @@ components:
         returnData:
           type: object
           nullable: true
-          description: 'Program-emitted return data, encoded as `{ "programId": <base58>, "data": [<base64>, "base64"] }`.'
           additionalProperties: true
+          description: Program-emitted return data when set; null otherwise.
         innerInstructions:
           type: array
-          nullable: true
-          description: '`null` unless `config.innerInstructions = true`. When present, an array of `{ index, instructions[] }` entries — one per outer instruction that produced inner instructions.'
+          description: 'Present when `config.innerInstructions = true`. Each entry: `{ index, instructions[] }` — one per outer instruction that produced inner instructions.'
           items:
             type: object
             additionalProperties: true
@@ -501,10 +498,4 @@ components:
       in: query
       name: api_key
       description: Pass `?api_key=<api-key>` on the URL.
-security: *id001
-1
-_key
-      description: Pass `?api_key=<api-key>` on the URL.
-security: *id001
-ey>` on the URL.
 security: *id001
