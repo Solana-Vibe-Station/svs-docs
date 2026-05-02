@@ -55,4 +55,36 @@ jobs:
           done
           exit "$fail"
 
-      - name: Summar
+      - name: Validate Lightspeed spec
+        run: |
+          fail=0
+          for f in api-specs/lightspeed/*.yaml; do
+            echo "=== $f ==="
+            redocly lint "$f" --skip-rule no-unused-components || fail=1
+          done
+          exit "$fail"
+
+      - name: Validate Jito specs
+        run: |
+          fail=0
+          for f in api-specs/jito/*.yaml; do
+            echo "=== $f ==="
+            redocly lint "$f" --skip-rule no-unused-components || fail=1
+          done
+          exit "$fail"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## OpenAPI Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Spec layout: one OpenAPI 3.0 file per JSON-RPC method." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Group | Files |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SVS API (REST) | $(ls api-specs/svs-api.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Solana RPC (HTTP) | $(ls api-specs/solana-rpc/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Historical RPC | $(ls api-specs/historical/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| WebSocket RPC | $(ls api-specs/websocket-rpc/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lightspeed | $(ls api-specs/lightspeed/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Jito | $(ls api-specs/jito/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY

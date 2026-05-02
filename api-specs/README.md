@@ -17,10 +17,15 @@ api-specs/
 │   ├── getBlock.yaml                 #   each spec has one POST /historical operation
 │   ├── getTransactionsForAddress.yaml
 │   └── …
-└── websocket-rpc/                    # 16 Solana WebSocket subscription methods
-    ├── accountSubscribe.yaml         #   each spec has one POST / op against wss://
-    ├── slotSubscribe.yaml            #   the JSON-RPC envelope is sent in a WS frame
-    └── …
+├── websocket-rpc/                    # 16 Solana WebSocket subscription methods
+│   ├── accountSubscribe.yaml         #   each spec has one POST / op against wss://
+│   ├── slotSubscribe.yaml            #   the JSON-RPC envelope is sent in a WS frame
+│   └── …
+├── lightspeed/                       # Low-latency transaction landing
+│   └── lightspeed.yaml               #   POST /lightspeed (sendTransaction)
+└── jito/                             # Jito bundle methods
+    ├── sendBundle.yaml               #   POST /jito (Staked tiers only)
+    └── simulateBundle.yaml           #   POST / (read-only, all tiers)
 ```
 
 ## Why one file per method
@@ -56,9 +61,11 @@ The generator is also responsible for the layout of this directory — adding a
 new method to the appropriate `_METHODS` list automatically produces a new
 `<methodName>.yaml` file in the right subdirectory.
 
-The `svs-api.yaml` spec is the exception: it's hand-authored because it
-documents a real REST API with distinct paths per endpoint and benefits from
-the standard one-spec-per-API layout.
+The `svs-api.yaml`, `lightspeed/lightspeed.yaml`, `jito/sendBundle.yaml`, and
+`jito/simulateBundle.yaml` specs are the exceptions: they're hand-authored
+because they document either a real REST API (svs-api) or transaction-sending
+endpoints whose shapes don't fit the standard JSON-RPC method pattern. None of
+these are emitted by the generator; edit the YAML directly.
 
 ## Connecting to GitBook
 

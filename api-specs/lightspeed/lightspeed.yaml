@@ -1,0 +1,342 @@
+openapi: 3.0.3
+info:
+  title: 'Lightspeed: /lightspeed'
+  description: |-
+    Lightspeed is the SVS low-latency transaction landing service. Sending a `sendTransaction` JSON-RPC request to the `/lightspeed` path on any tier endpoint forwards the signed transaction through SVS's Lightspeed engine, which races it across multiple upstream peers based on the included tip.
+
+    A minimum tip of **0.001 SOL (1,000,000 lamports)** is required: the transaction must include a system-program transfer instruction sending at least that amount to the Lightspeed tip address `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`. The request must also set `skipPreflight: true` and the transaction must be fully signed and serialized.
+
+    Use `getHealth` against the same tier endpoint to keep the connection alive when idle.
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://basic.rpc.solanavibestation.com
+  description: Basic tier with Lightspeed
+- url: https://ultra.rpc.solanavibestation.com
+  description: Ultra tier with Lightspeed
+- url: https://elite.rpc.solanavibestation.com
+  description: Elite tier with Lightspeed
+- url: https://epic.rpc.solanavibestation.com
+  description: Epic tier with Lightspeed
+- url: https://basic.swqos.solanavibestation.com
+  description: Basic SWQoS tier with Lightspeed
+- url: https://ultra.swqos.solanavibestation.com
+  description: Ultra SWQoS tier with Lightspeed
+- url: https://elite.swqos.solanavibestation.com
+  description: Elite SWQoS tier with Lightspeed
+tags:
+- name: Lightspeed
+  description: Low-latency transaction landing via the SVS Lightspeed engine.
+paths:
+  /lightspeed:
+    post:
+      operationId: lightspeedSendTransaction
+      summary: sendTransaction — Submit a signed transaction via Lightspeed
+      tags:
+      - Lightspeed
+      description: |
+        Submits a signed transaction with priority processing through the Lightspeed validator network. Provides accelerated landing through a tip-based priority system.
+
+        **Requirements**
+
+        1. The transaction must include a system-transfer instruction sending **≥ 0.001 SOL (1,000,000 lamports)** to a Lightspeed tip address.
+        2. The configuration object **must** set `skipPreflight: true`.
+        3. The transaction must be fully signed and serialized (base58 or base64).
+
+        **Lightspeed tip addresses**
+
+        - `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`
+
+        **Keep-alive:** issue periodic `getHealth` calls to the same tier endpoint to maintain your connection.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  description: JSON-RPC protocol version.
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  description: Request identifier echoed back in the response.
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - sendTransaction
+                  description: Must be `sendTransaction`.
+                  example: sendTransaction
+                params:
+                  type: array
+                  description: 'Positional parameters: [signed transaction (base58/base64 string), config object].'
+                  minItems: 2
+                  maxItems: 2
+                  items:
+                    anyOf:
+                    - title: signed_transaction
+                      type: string
+                      description: Fully signed and serialized transaction containing your instructions plus a system-transfer of ≥ 0.001 SOL to a Lightspeed tip address. Base58 or base64 encoded.
+                    - title: config
+                      type: object
+                      required:
+                      - skipPreflight
+                      properties:
+                        encoding:
+                          type: string
+                          enum:
+                          - base58
+                          - base64
+                          default: base58
+                          description: Encoding of the transaction string in the first param.
+                        skipPreflight:
+                          type: boolean
+                          enum:
+                          - true
+                          description: Must be `true` for Lightspeed.
+                        maxRetries:
+                          type: integer
+                          format: int32
+                          minimum: 0
+                          description: Maximum number of times the RPC node will retry sending the transaction. Set to `0` to disable retries.
+                          example: 0
+                        preflightCommitment:
+                          $ref: '#/components/schemas/Commitment'
+                        minContextSlot:
+                          type: integer
+                          format: int64
+            examples:
+              default:
+                summary: Standard Lightspeed sendTransaction request.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: sendTransaction
+                  params:
+                  - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsaBCncVG7BFggS8w9snUts67BSh3EqKpXLUm5UMHfD7ZBe9GhARjbNQMLJ1QD3Spr6REFY9Vw6y4jTvVwjNyKjFg0G5rucCjJ9a2Cf3sKKkgJfS2dWWEJB6gq7s7wSQ4gZzJYBHDnQ8sSg9a9kGKKz6Dcs
+                  - encoding: base58
+                    skipPreflight: true
+                    maxRetries: 0
+      responses:
+        '200':
+          description: Transaction accepted; returns the transaction signature.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: string
+                      description: Base-58 transaction signature. Use this to track status via `getSignatureStatuses` or `getTransaction`.
+                      pattern: '^[1-9A-HJ-NP-Za-km-z]{87,88}$'
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result: 2id3YC2jK9G5Wb2GmXYhqJqhb5S1n9mfK8ydGT6YWq9DJNWjPvAo1e5uDYKKxe8Y2k1Vp4nUJGHG9xEJT1m4F9G
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: &id001
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://basic.swqos.solanavibestation.com/lightspeed \
+            -H "Content-Type: application/json" \
+            -H "Authorization: your-api-key-here" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"sendTransaction","params":["<SIGNED_TX_BASE58>",{"encoding":"base58","skipPreflight":true,"maxRetries":0}]}'
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection } from "@solana/web3.js";
+
+          // Point Connection at the /lightspeed path on any tier endpoint.
+          const connection = new Connection(
+            "https://basic.swqos.solanavibestation.com/lightspeed",
+            "confirmed",
+          );
+
+          // signedTx is a Buffer containing your fully signed transaction
+          // including a 0.001 SOL transfer to a Lightspeed tip address.
+          const sig = await connection.sendRawTransaction(signedTx, {
+            skipPreflight: true,
+            maxRetries: 0,
+          });
+          console.log(`signature=${sig}`);
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solana.rpc.types import TxOpts
+
+          # Point the Client at the /lightspeed path on any tier endpoint.
+          client = Client("https://basic.swqos.solanavibestation.com/lightspeed")
+
+          # signed_tx is the fully signed transaction including a 0.001 SOL
+          # transfer to a Lightspeed tip address.
+          resp = client.send_raw_transaction(
+              bytes(signed_tx),
+              opts=TxOpts(skip_preflight=True, max_retries=0),
+          )
+          print(f"signature={resp.value}")
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_client::rpc_config::RpcSendTransactionConfig;
+          use solana_sdk::commitment_config::CommitmentConfig;
+
+          // Point the RpcClient at the /lightspeed path on any tier endpoint.
+          let client = RpcClient::new_with_commitment(
+              "https://basic.swqos.solanavibestation.com/lightspeed".to_string(),
+              CommitmentConfig::confirmed(),
+          );
+
+          // signed_tx is your fully signed Transaction including a 0.001 SOL
+          // transfer to a Lightspeed tip address.
+          let sig = client.send_transaction_with_config(
+              &signed_tx,
+              RpcSendTransactionConfig {
+                  skip_preflight: true,
+                  max_retries: Some(0),
+                  ..Default::default()
+              },
+          )?;
+          println!("signature={}", sig);
+components:
+  schemas:
+    JsonRpcEnvelope:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      description: Base envelope of every JSON-RPC 2.0 response.
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+          example: '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+          description: Echoed request id.
+          example: 1
+    JsonRpcErrorResponse:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      - error
+      description: JSON-RPC 2.0 error response.
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+        error:
+          $ref: '#/components/schemas/JsonRpcError'
+    JsonRpcError:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: integer
+          description: |
+            JSON-RPC error code. Common values:
+            - `-32700` Parse error
+            - `-32600` Invalid Request
+            - `-32602` Invalid params
+            - `-32603` Internal error
+            - `-32003` Unauthorized (missing/invalid API key)
+            - `-32005` Too Many Requests
+          example: -32602
+        message:
+          type: string
+          example: Invalid params
+        data:
+          type: object
+          additionalProperties: true
+    Commitment:
+      type: string
+      enum:
+      - processed
+      - confirmed
+      - finalized
+      default: finalized
+      description: |-
+        How finalized a block is at query time:
+        - `processed`: most recent block, may be skipped
+        - `confirmed`: confirmed by supermajority
+        - `finalized`: finalized by >2/3 stake
+  responses:
+    UnauthorizedError:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    ForbiddenError:
+      description: Insufficient permissions for the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    TooManyRequestsError:
+      description: Rate limit exceeded for this tier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001

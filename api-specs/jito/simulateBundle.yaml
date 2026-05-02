@@ -1,0 +1,355 @@
+openapi: 3.0.3
+info:
+  title: 'Jito: simulateBundle'
+  description: |-
+    `simulateBundle` runs a Jito bundle through the simulation engine without executing it on chain. The result includes program logs, pre/post account state, compute units consumed, and any return data.
+
+    Unlike `sendBundle`, this method is read-only and is available on **all tiers** at the standard JSON-RPC root path.
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://public.rpc.solanavibestation.com
+  description: Public endpoint (rate-limited, no auth)
+- url: https://basic.rpc.solanavibestation.com
+  description: Basic tier
+- url: https://ultra.rpc.solanavibestation.com
+  description: Ultra tier
+- url: https://elite.rpc.solanavibestation.com
+  description: Elite tier
+- url: https://epic.rpc.solanavibestation.com
+  description: Epic tier
+- url: https://basic.swqos.solanavibestation.com
+  description: Basic SWQoS tier
+- url: https://ultra.swqos.solanavibestation.com
+  description: Ultra SWQoS tier
+- url: https://elite.swqos.solanavibestation.com
+  description: Elite SWQoS tier
+tags:
+- name: Jito
+  description: Read-only Jito bundle simulation; same JSON-RPC root path as standard methods.
+paths:
+  /:
+    post:
+      operationId: simulateBundle
+      summary: simulateBundle — Simulate a Jito bundle without executing
+      tags:
+      - Jito
+      description: |
+        Simulates a Jito bundle without submitting it. Returns logs, compute units consumed, return data, and pre/post account snapshots — useful for testing arbitrage, MEV, and multi-step transaction flows before paying for an on-chain attempt.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  description: JSON-RPC protocol version.
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  description: Request identifier echoed back in the response.
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - simulateBundle
+                  description: Must be `simulateBundle`.
+                  example: simulateBundle
+                params:
+                  type: array
+                  description: 'Positional parameters: [bundle config object].'
+                  minItems: 1
+                  maxItems: 1
+                  items:
+                    type: object
+                    required:
+                    - encodedTransactions
+                    properties:
+                      encodedTransactions:
+                        type: array
+                        minItems: 1
+                        maxItems: 4
+                        description: 1–4 base64-encoded signed transactions.
+                        items:
+                          type: string
+                      skipSigVerify:
+                        type: boolean
+                        default: false
+                        description: Skip signature verification on simulated transactions.
+                      replaceRecentBlockhash:
+                        type: boolean
+                        default: false
+                        description: Replace each transaction's recent blockhash with the current one before simulating.
+                      preExecutionAccountsConfigs:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                        description: Per-transaction account snapshot configs to capture state *before* executing the corresponding transaction.
+                      postExecutionAccountsConfigs:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                        description: Per-transaction account snapshot configs to capture state *after* executing the corresponding transaction.
+            examples:
+              default:
+                summary: Single-transaction simulation, signature verification skipped.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: simulateBundle
+                  params:
+                  - encodedTransactions:
+                    - AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAEDArczbMia1tLmq7zz4DinMNN0pJ1JtLdqIJPUw3YrGCzYAMHBsgN27lcgB6H2WQvFgyZuJYHa46puVH5iqy8Svm7TM6hFD+oy9JrVQY6IgvJTlxSGV7+Hv3Pw4aF2OT0QBAEF4IZdLxGD4bz2Yh9oPlJv
+                    skipSigVerify: true
+      responses:
+        '200':
+          description: Simulation complete; returns the per-transaction simulation result.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: object
+                      properties:
+                        context:
+                          type: object
+                          properties:
+                            apiVersion:
+                              type: string
+                            slot:
+                              type: integer
+                              format: int64
+                        err:
+                          type: object
+                          nullable: true
+                          additionalProperties: true
+                          description: Error from the simulation, or `null` on success.
+                        logs:
+                          type: array
+                          items:
+                            type: string
+                          description: Program log lines produced during simulation.
+                        preExecutionAccounts:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        postExecutionAccounts:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true
+                        unitsConsumed:
+                          type: integer
+                          format: int64
+                          description: Compute units consumed by the bundle.
+                        returnData:
+                          type: object
+                          description: Program return data, if any.
+                          additionalProperties: true
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result:
+                  context:
+                    apiVersion: 1.16.3
+                    slot: 203841925
+                  err: null
+                  logs:
+                  - 'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]'
+                  - 'Program log: Instruction: Transfer'
+                  - Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4645 of 200000 compute units
+                  - Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+                  preExecutionAccounts:
+                  - lamports: 2039280
+                    owner: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+                    data: AQAAABzjWe1aAS4E+hQrnHUaHF6Hz9CgFhuchf8btqjbsDoP
+                    executable: false
+                    rentEpoch: 402
+                  postExecutionAccounts:
+                  - lamports: 2039280
+                    owner: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+                    data: AQAAABzjWe1aAS4E+hQrnHUaHF6Hz9CgFhuchf8btqjbsDoP
+                    executable: false
+                    rentEpoch: 402
+                  unitsConsumed: 4645
+                  returnData:
+                    programId: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+                    data: Ag==
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: &id001
+      - {}
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"simulateBundle","params":[{"encodedTransactions":["<TX1_BASE64>"],"skipSigVerify":true}]}'
+      - lang: typescript
+        label: TypeScript
+        source: |-
+          // Direct fetch — solana-web3.js does not expose simulateBundle natively.
+          const res = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "simulateBundle",
+              params: [
+                {
+                  encodedTransactions: [tx1Base64], // 1–4 base64 txs
+                  skipSigVerify: true,
+                },
+              ],
+            }),
+          });
+          const { result, error } = await res.json();
+          if (error) throw error;
+          console.log("logs=", result.logs);
+          console.log("unitsConsumed=", result.unitsConsumed);
+      - lang: rust
+        label: Rust
+        source: |-
+          use reqwest::Client;
+          use serde_json::json;
+
+          let client = Client::new();
+          let body = json!({
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "simulateBundle",
+              "params": [{
+                  "encodedTransactions": [tx1_base64],
+                  "skipSigVerify": true
+              }]
+          });
+          let resp: serde_json::Value = client
+              .post("https://public.rpc.solanavibestation.com")
+              .json(&body)
+              .send().await?
+              .json().await?;
+          println!("logs={}", resp["result"]["logs"]);
+components:
+  schemas:
+    JsonRpcEnvelope:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      description: Base envelope of every JSON-RPC 2.0 response.
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+          example: '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+          description: Echoed request id.
+          example: 1
+    JsonRpcErrorResponse:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      - error
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+        error:
+          $ref: '#/components/schemas/JsonRpcError'
+    JsonRpcError:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: integer
+          example: -32602
+        message:
+          type: string
+          example: Invalid params
+        data:
+          type: object
+          additionalProperties: true
+  responses:
+    UnauthorizedError:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    ForbiddenError:
+      description: Insufficient permissions for the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    TooManyRequestsError:
+      description: Rate limit exceeded for this tier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001
+  

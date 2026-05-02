@@ -1,0 +1,292 @@
+openapi: 3.0.3
+info:
+  title: 'Jito: sendBundle'
+  description: |-
+    `sendBundle` submits a bundle of up to 4 base64-encoded transactions to the Jito block engine for atomic execution. Bundles provide MEV protection: all transactions in the bundle either land together or none of them do.
+
+    Available only on **Staked RPC (SWQoS)** tiers, served from the `/jito` path. Each bundle must include a tip transfer of **≥ 0.001 SOL** to the Jito tip address `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`, placed in the **last** transaction of the bundle.
+
+    | Tier | Rate limit |
+    |------|------------|
+    | Basic Staked | 5 bundles/sec |
+    | Ultra Staked | 10 bundles/sec |
+    | Elite Staked | 15 bundles/sec |
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://basic.swqos.solanavibestation.com
+  description: Basic SWQoS tier with Jito bundle support
+- url: https://ultra.swqos.solanavibestation.com
+  description: Ultra SWQoS tier with Jito bundle support
+- url: https://elite.swqos.solanavibestation.com
+  description: Elite SWQoS tier with Jito bundle support
+tags:
+- name: Jito
+  description: Jito-enabled bundle methods served from the `/jito` path on Staked tiers.
+paths:
+  /jito:
+    post:
+      operationId: sendBundle
+      summary: sendBundle — Submit an atomic bundle to the Jito block engine
+      tags:
+      - Jito
+      description: |
+        Submits an atomic bundle of base64-encoded transactions to the Jito block engine.
+
+        **Requirements**
+
+        - Maximum **4** transactions per bundle.
+        - A tip transfer of **≥ 0.001 SOL** to a Jito tip address is **required**.
+        - The tip instruction should be in the **last** transaction of the bundle.
+        - All transactions must be base64-encoded.
+        - Transactions execute atomically in the order provided.
+
+        **Jito tip addresses**
+
+        - `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  description: JSON-RPC protocol version.
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  description: Request identifier echoed back in the response.
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - sendBundle
+                  description: Must be `sendBundle`.
+                  example: sendBundle
+                params:
+                  type: array
+                  description: 'Positional parameters: [array of 1–4 base64 transactions, config object].'
+                  minItems: 2
+                  maxItems: 2
+                  items:
+                    anyOf:
+                    - title: transactions
+                      type: array
+                      minItems: 1
+                      maxItems: 4
+                      description: 1–4 base64-encoded fully signed transactions. The last must include a ≥ 0.001 SOL tip to a Jito tip address.
+                      items:
+                        type: string
+                    - title: config
+                      type: object
+                      required:
+                      - encoding
+                      properties:
+                        encoding:
+                          type: string
+                          enum:
+                          - base64
+                          description: Must be `base64`.
+                          example: base64
+            examples:
+              default:
+                summary: Two-transaction bundle.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: sendBundle
+                  params:
+                  - - AT2AqtlokikUWgGNnSX5xrmdvBjSaiIPxvFz6zc5Abn5Z0CPFW5GO+Y3rXceLnqLgQFnGw0yTk3NtJdFNsbrwwQBAAIEsXPDJ9cMVbpFQYClVM7PGLh8JOfCD6E2vz5VNmBCF+p4Uhyxec67hYm1VqLV7JTSSYaC/fm7KvWtZOSRzEFT2gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABUpTWpkpIQZNJOhxYNo4fHw1td28kruB5B+oQEEFRI1i3Wzl2VfewCI8oYXParnP78725sKFzYheTEn8v865YQIDABhqaXRvIGJ1bmRsZSAwOiBqaXRvIHRlc3QCAgABDAIAAACghgEAAAAAAA==
+                    - AS6fOZuGDsmyYdd+RC0fiFUgNe1BYTOYT+1hkRXHAeroC8R60h3g34EPF5Ys8sGzVBMP9MDSTVgy1/SSTqpCtA4BAAIEsXPDJ9cMVbpFQYClVM7PGLh8JOfCD6E2vz5VNmBCF+p4Uhyxec67hYm1VqLV7JTSSYaC/fm7KvWtZOSRzEFT2gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABUpTWpkpIQZNJOhxYNo4fHw1td28kruB5B+oQEEFRI1i3Wzl2VfewCI8oYXParnP78725sKFzYheTEn8v865YQIDABhqaXRvIGJ1bmRsZSAxOiBqaXRvIHRlc3QCAgABDAIAAACghgEAAAAAAA==
+                  - encoding: base64
+      responses:
+        '200':
+          description: Bundle accepted; returns one or more signatures (or a status sentinel).
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      oneOf:
+                      - type: string
+                        description: Single transaction signature, or the literal `bundle_submitted` if the bundle was accepted but signatures are not immediately available.
+                        example: 3x8f9a2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c
+                      - type: array
+                        items:
+                          type: string
+                        description: Array of base-58 transaction signatures, in bundle order.
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result: 3x8f9a2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: &id001
+      - {}
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://basic.swqos.solanavibestation.com/jito \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"sendBundle","params":[["<TX1_BASE64>","<TX2_BASE64>"],{"encoding":"base64"}]}'
+      - lang: typescript
+        label: TypeScript
+        source: |-
+          // Direct fetch — solana-web3.js does not expose sendBundle natively.
+          const res = await fetch("https://basic.swqos.solanavibestation.com/jito", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "sendBundle",
+              params: [
+                [tx1Base64, tx2Base64], // 1–4 base64-encoded txs; last has the tip
+                { encoding: "base64" },
+              ],
+            }),
+          });
+          const { result, error } = await res.json();
+          if (error) throw error;
+          console.log("result=", result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use reqwest::Client;
+          use serde_json::json;
+
+          let client = Client::new();
+          let body = json!({
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "sendBundle",
+              "params": [
+                  [tx1_base64, tx2_base64], // 1-4 base64 txs; last carries the tip
+                  { "encoding": "base64" }
+              ]
+          });
+          let resp: serde_json::Value = client
+              .post("https://basic.swqos.solanavibestation.com/jito")
+              .json(&body)
+              .send().await?
+              .json().await?;
+          println!("result={}", resp["result"]);
+components:
+  schemas:
+    JsonRpcEnvelope:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      description: Base envelope of every JSON-RPC 2.0 response.
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+          example: '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+          description: Echoed request id.
+          example: 1
+    JsonRpcErrorResponse:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      - error
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+        error:
+          $ref: '#/components/schemas/JsonRpcError'
+    JsonRpcError:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: integer
+          example: -32602
+        message:
+          type: string
+          example: Invalid params
+        data:
+          type: object
+          additionalProperties: true
+  responses:
+    UnauthorizedError:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    ForbiddenError:
+      description: Insufficient permissions for the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    TooManyRequestsError:
+      description: Rate limit exceeded for this tier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001
