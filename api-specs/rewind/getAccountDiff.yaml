@@ -1,0 +1,460 @@
+openapi: 3.0.3
+info:
+  title: 'Rewind RPC: getAccountDiff'
+  description: |-
+    Two-point structural diff for a single account. **Each side is positioned independently** — both can be end-of-slot, both sub-slot anchored, or one of each.
+
+    Returns the AccountInfo at each side plus a structural summary. No byte-level data diff is computed server-side; clients can compute it cheaply from both blobs.
+
+    Common idiom: pass `anchorA: { signature, position: "before" }` and `anchorB: { signature, position: "after" }` to get exactly the per-transaction state transition for one account in one round-trip.
+
+    Deltas are always reported as `B − A` (sides are not required to be ordered).
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://public.rpc.solanavibestation.com
+  description: Public endpoint (rate-limited, no auth)
+- url: https://basic.rpc.solanavibestation.com
+  description: Basic tier
+- url: https://ultra.rpc.solanavibestation.com
+  description: Ultra tier
+- url: https://elite.rpc.solanavibestation.com
+  description: Elite tier
+- url: https://epic.rpc.solanavibestation.com
+  description: Epic tier
+tags:
+- name: Rewind
+  description: Historical account state and per-write change history.
+paths:
+  /:
+    post:
+      operationId: getAccountDiff
+      summary: getAccountDiff — Two-point diff for one account
+      tags:
+      - Rewind
+      description: |
+        Two-point diff for a single account. Each side accepts the same three positioning modes as `getAccountInfo` (`slot`, `slot+writeVersion`, or `anchor`). Fields are suffixed `A`/`B` so both sides coexist in one config object.
+
+        **Parameters**
+
+        0. `pubkey` (required) — base58.
+        1. `config` (required) — see fields below.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              - params
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - getAccountDiff
+                  example: getAccountDiff
+                params:
+                  type: array
+                  description: Positional parameters [pubkey, config].
+                  minItems: 2
+                  maxItems: 2
+                  items:
+                    anyOf:
+                    - title: pubkey
+                      type: string
+                    - title: config
+                      type: object
+                      properties:
+                        slotA:
+                          type: integer
+                          format: int64
+                          description: End-of-slot at A. Required for end-of-slot or explicit-`writeVersionA` modes on side A.
+                        writeVersionA:
+                          type: integer
+                          format: int64
+                          description: Explicit per-write boundary at `slotA`. Mutually exclusive with `anchorA`.
+                        anchorA:
+                          $ref: '#/components/schemas/Anchor'
+                        slotB:
+                          type: integer
+                          format: int64
+                        writeVersionB:
+                          type: integer
+                          format: int64
+                        anchorB:
+                          $ref: '#/components/schemas/Anchor'
+                        encoding:
+                          $ref: '#/components/schemas/Encoding'
+                        dataSlice:
+                          $ref: '#/components/schemas/DataSlice'
+                        tolerateGaps:
+                          type: boolean
+                          default: false
+                          description: Single flag covering both sides.
+            examples:
+              end_of_slot_vs_end_of_slot:
+                summary: End-of-slot vs. end-of-slot.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getAccountDiff
+                  params:
+                  - <pubkey>
+                  - slotA: 250000000
+                    slotB: 250100000
+                    encoding: base64
+              per_tx_state_transition:
+                summary: Per-tx state transition for one account.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getAccountDiff
+                  params:
+                  - <pubkey>
+                  - anchorA:
+                      signature: <sig>
+                      position: before
+                    anchorB:
+                      signature: <sig>
+                      position: after
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: object
+                      required:
+                      - context
+                      - value
+                      properties:
+                        context:
+                          type: object
+                          required:
+                          - apiVersion
+                          properties:
+                            apiVersion:
+                              type: string
+                              example: rewind-1.1.0
+                        value:
+                          type: object
+                          required:
+                          - a
+                          - b
+                          properties:
+                            a:
+                              $ref: '#/components/schemas/AccountInfo'
+                            b:
+                              $ref: '#/components/schemas/AccountInfo'
+                            diff:
+                              $ref: '#/components/schemas/Diff'
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result:
+                  context:
+                    apiVersion: rewind-1.1.0
+                  value:
+                    a:
+                      lamports: 100000
+                      owner: <base58>
+                      data:
+                      - ''
+                      - base64
+                      executable: false
+                      rentEpoch: 361
+                      space: 165
+                      rewindSlot: 249999998
+                      rewindWriteVersion: 4471
+                    b:
+                      lamports: 112345
+                      owner: <base58>
+                      data:
+                      - ''
+                      - base64
+                      executable: false
+                      rentEpoch: 361
+                      space: 165
+                      rewindSlot: 250100000
+                      rewindWriteVersion: 8821
+                    diff:
+                      lamportsDelta: 12345
+                      ownerChanged: false
+                      executableChanged: false
+                      rentEpochDelta: 0
+                      dataChanged: true
+                      dataLenA: 165
+                      dataLenB: 165
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: &id001
+      - {}
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getAccountDiff","params":["<pubkey>",{"anchorA":{"signature":"<sig>","position":"before"},"anchorB":{"signature":"<sig>","position":"after"}}]}'
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const res = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1, method: "getAccountDiff",
+              params: [pubkey, {
+                anchorA: { signature: sig, position: "before" },
+                anchorB: { signature: sig, position: "after" },
+              }],
+            }),
+          });
+          const { result } = await res.json();
+          console.log("lamportsDelta=", result.value.diff?.lamportsDelta);
+          console.log("dataChanged=", result.value.diff?.dataChanged);
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.post(
+              "https://public.rpc.solanavibestation.com",
+              json={
+                  "jsonrpc": "2.0", "id": 1, "method": "getAccountDiff",
+                  "params": [pubkey, {
+                      "anchorA": {"signature": sig, "position": "before"},
+                      "anchorB": {"signature": sig, "position": "after"},
+                  }],
+              },
+              timeout=10,
+          ).json()
+          diff = resp["result"]["value"]["diff"]
+          print("lamportsDelta=", diff and diff["lamportsDelta"])
+components:
+  schemas:
+    JsonRpcEnvelope:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+    JsonRpcErrorResponse:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      - error
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+        error:
+          $ref: '#/components/schemas/JsonRpcError'
+    JsonRpcError:
+      type: object
+      required:
+      - code
+      - message
+      description: Same set as `getAccountInfo`, applied to both sides. The side (A/B) is named in the error message.
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+    Encoding:
+      type: string
+      enum:
+      - base64
+      - base64+zstd
+      - base58
+      - jsonParsed
+      default: base64
+    DataSlice:
+      type: object
+      required:
+      - offset
+      - length
+      properties:
+        offset:
+          type: integer
+          format: int64
+          minimum: 0
+        length:
+          type: integer
+          format: int64
+          minimum: 0
+    Anchor:
+      type: object
+      required:
+      - signature
+      properties:
+        signature:
+          type: string
+        position:
+          type: string
+          enum:
+          - before
+          - after
+          default: before
+    AccountInfo:
+      type: object
+      nullable: true
+      required:
+      - lamports
+      - owner
+      - data
+      - executable
+      - rentEpoch
+      - space
+      - rewindSlot
+      - rewindWriteVersion
+      properties:
+        lamports:
+          type: integer
+          format: int64
+        owner:
+          type: string
+        data:
+          oneOf:
+          - type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+          - type: object
+            additionalProperties: true
+        executable:
+          type: boolean
+        rentEpoch:
+          type: integer
+          format: int64
+        space:
+          type: integer
+          format: int64
+        rewindSlot:
+          type: integer
+          format: int64
+        rewindWriteVersion:
+          type: integer
+          format: int64
+    Diff:
+      type: object
+      nullable: true
+      description: '`null` when either side is `null`. `lamportsDelta` and `rentEpochDelta` are i128 (signed) to represent negative changes.'
+      required:
+      - lamportsDelta
+      - ownerChanged
+      - executableChanged
+      - rentEpochDelta
+      - dataChanged
+      - dataLenA
+      - dataLenB
+      properties:
+        lamportsDelta:
+          type: string
+          description: Decimal-string i128 (B − A).
+          example: '12345'
+        ownerChanged:
+          type: boolean
+        executableChanged:
+          type: boolean
+        rentEpochDelta:
+          type: string
+          description: Decimal-string i128 (B − A).
+          example: '0'
+        dataChanged:
+          type: boolean
+          description: Computed by direct byte equality of the archived data, not by hash. True even for accounts not yet covered by the dedup pointer.
+        dataLenA:
+          type: integer
+          format: int64
+        dataLenB:
+          type: integer
+          format: int64
+  responses:
+    UnauthorizedError:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    ForbiddenError:
+      description: Insufficient permissions for the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    TooManyRequestsError:
+      description: Rate limit exceeded for this tier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001

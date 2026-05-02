@@ -1,0 +1,371 @@
+openapi: 3.0.3
+info:
+  title: 'Rewind RPC: getRewindCoverage'
+  description: |-
+    Reports the slot range the archive covers, plus the list of non-complete slots within it. Critical for client trust — answers "what data do you actually have?"
+
+    Leader-skipped slots (`status=skipped` internally) are intentionally **not** listed in `gaps` — those slots never produced a block on chain. Their count is reported separately in `skippedSlotCount`.
+
+    `filteredOwners` and `filteredPubkeys` list account classes whose post-S0 writes are deliberately not tracked — simulations touching those accounts return `-32017 FilteredAccountStale`.
+
+    Served from an in-process gap cache that incrementally tail-rescans on each call. For dashboards or status pages that only need the headline numbers, pass `includeGaps: false` for a constant-cost summary-only response.
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://public.rpc.solanavibestation.com
+  description: Public endpoint (rate-limited, no auth)
+- url: https://basic.rpc.solanavibestation.com
+  description: Basic tier
+- url: https://ultra.rpc.solanavibestation.com
+  description: Ultra tier
+- url: https://elite.rpc.solanavibestation.com
+  description: Elite tier
+- url: https://epic.rpc.solanavibestation.com
+  description: Epic tier
+tags:
+- name: Rewind
+  description: Archive coverage and meta-information.
+paths:
+  /:
+    post:
+      operationId: getRewindCoverage
+      summary: getRewindCoverage — Archive-wide ingest coverage and gap list
+      tags:
+      - Rewind
+      description: |
+        Returns the archive's coverage summary and gap list.
+
+        `params` is either omitted, `[]`, or `[<config>]`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - jsonrpc
+              - id
+              - method
+              properties:
+                jsonrpc:
+                  type: string
+                  enum:
+                  - '2.0'
+                  example: '2.0'
+                id:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                  example: 1
+                method:
+                  type: string
+                  enum:
+                  - getRewindCoverage
+                  example: getRewindCoverage
+                params:
+                  type: array
+                  description: Empty array, or single-element array `[<config>]`.
+                  minItems: 0
+                  maxItems: 1
+                  items:
+                    type: object
+                    properties:
+                      fromSlot:
+                        type: integer
+                        format: int64
+                        description: Lower bound of the gap window. Defaults to `earliestSlot`. Clipped to `earliestSlot` if smaller.
+                      toSlot:
+                        type: integer
+                        format: int64
+                        description: Upper bound (inclusive). Defaults to `latestSlot`. Clipped to `latestSlot` if larger.
+                      maxGaps:
+                        type: integer
+                        format: int32
+                        default: 1000
+                        description: Cap on returned gap ranges. Counters remain accurate when truncated.
+                      includeGaps:
+                        type: boolean
+                        default: true
+                        description: Set `false` to skip the gap list entirely (constant-cost summary-only response).
+            examples:
+              full:
+                summary: Full coverage including gap list.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getRewindCoverage
+                  params: []
+              summary_only:
+                summary: Summary only (constant-cost).
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getRewindCoverage
+                  params:
+                  - includeGaps: false
+              window:
+                summary: Gaps in a specific window.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getRewindCoverage
+                  params:
+                  - fromSlot: 250000000
+                    toSlot: 250100000
+                    maxGaps: 100
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/JsonRpcEnvelope'
+                - type: object
+                  required:
+                  - result
+                  properties:
+                    result:
+                      type: object
+                      required:
+                      - earliestSlot
+                      - latestSlot
+                      - slotRange
+                      - missingSlotCount
+                      - skippedSlotCount
+                      - gapPercent
+                      - truncated
+                      - filteredOwners
+                      - filteredPubkeys
+                      - note
+                      properties:
+                        earliestSlot:
+                          type: integer
+                          format: int64
+                          nullable: true
+                          description: Oldest ingested slot. `null` before the ingestor's first flush.
+                        latestSlot:
+                          type: integer
+                          format: int64
+                          nullable: true
+                          description: Newest ingested slot. `null` before the ingestor's first flush.
+                        slotRange:
+                          type: integer
+                          format: int64
+                          nullable: true
+                          description: '`latestSlot - earliestSlot + 1` when both are present.'
+                        missingSlotCount:
+                          type: integer
+                          format: int64
+                          description: Total number of slots in `[fromSlot, toSlot]` with `status=missing` — genuine archive gaps.
+                        skippedSlotCount:
+                          type: integer
+                          format: int64
+                          description: Total number of leader-skipped slots in the window. Not failures of the archive.
+                        gapPercent:
+                          type: number
+                          format: double
+                          nullable: true
+                          description: '`missingSlotCount / (slotRange − skippedSlotCount) * 100`. Excludes skipped slots from the denominator.'
+                        gaps:
+                          type: array
+                          nullable: true
+                          description: Contiguous archive-miss ranges. `null` when `includeGaps=false`.
+                          items:
+                            $ref: '#/components/schemas/GapEntry'
+                        truncated:
+                          type: boolean
+                          description: True if the gap list was capped at `maxGaps`. `missingSlotCount` and `skippedSlotCount` remain accurate.
+                        filteredOwners:
+                          type: array
+                          description: Base58 owner pubkeys for which the ingestor drops writes.
+                          items:
+                            type: string
+                        filteredPubkeys:
+                          type: array
+                          description: Base58 specific account pubkeys that are filtered.
+                          items:
+                            type: string
+                        note:
+                          type: string
+                          description: Human-readable reminder of the missing/skipped + filter distinction.
+              example:
+                jsonrpc: '2.0'
+                id: 1
+                result:
+                  earliestSlot: 240000000
+                  latestSlot: 251234567
+                  slotRange: 11234568
+                  missingSlotCount: 42
+                  skippedSlotCount: 5821
+                  gapPercent: 0.000374
+                  gaps:
+                  - fromSlot: 245100000
+                    toSlot: 245100042
+                    status: missing
+                  truncated: false
+                  filteredOwners:
+                  - Vote111111111111111111111111111111111111111
+                  - Stake11111111111111111111111111111111111111
+                  filteredPubkeys: []
+                  note: gaps lists only archive misses (status=missing); leader-skipped slots are counted in skippedSlotCount but not listed as gaps. gapPercent excludes skipped slots from the denominator. filteredOwners/filteredPubkeys list account classes whose post-S0 writes are deliberately not tracked — simulations touching those accounts return -32017 FilteredAccountStale.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: &id001
+      - {}
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL (full)
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getRewindCoverage","params":[]}'
+      - lang: shell
+        label: cURL (summary)
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getRewindCoverage","params":[{"includeGaps":false}]}'
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const res = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1, method: "getRewindCoverage",
+              params: [{ fromSlot: 250_000_000, toSlot: 250_100_000, maxGaps: 100 }],
+            }),
+          });
+          const { result } = await res.json();
+          console.log(`coverage gap%=${result.gapPercent} missing=${result.missingSlotCount}`);
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.post(
+              "https://public.rpc.solanavibestation.com",
+              json={"jsonrpc": "2.0", "id": 1, "method": "getRewindCoverage",
+                    "params": [{"includeGaps": False}]},
+              timeout=10,
+          ).json()
+          r = resp["result"]
+          print(f"earliest={r['earliestSlot']} latest={r['latestSlot']} "
+                f"missing={r['missingSlotCount']} skipped={r['skippedSlotCount']}")
+components:
+  schemas:
+    JsonRpcEnvelope:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+    JsonRpcErrorResponse:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      - error
+      properties:
+        jsonrpc:
+          type: string
+          enum:
+          - '2.0'
+        id:
+          oneOf:
+          - type: string
+          - type: integer
+        error:
+          $ref: '#/components/schemas/JsonRpcError'
+    JsonRpcError:
+      type: object
+      required:
+      - code
+      - message
+      description: '`-32602` malformed params; `-32603` HBase failure during refresh (transient).'
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+    GapEntry:
+      type: object
+      required:
+      - fromSlot
+      - toSlot
+      - status
+      properties:
+        fromSlot:
+          type: integer
+          format: int64
+        toSlot:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+          - missing
+          - partial
+          description: '`missing` for archive-misses. `partial` is reserved; not emitted today.'
+  responses:
+    UnauthorizedError:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    ForbiddenError:
+      description: Insufficient permissions for the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    TooManyRequestsError:
+      description: Rate limit exceeded for this tier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonRpcErrorResponse'
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001

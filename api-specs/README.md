@@ -23,9 +23,16 @@ api-specs/
 │   └── …
 ├── lightspeed/                       # Low-latency transaction landing
 │   └── lightspeed.yaml               #   POST /lightspeed (sendTransaction)
-└── jito/                             # Jito bundle methods
-    ├── sendBundle.yaml               #   POST /jito (Staked tiers only)
-    └── simulateBundle.yaml           #   POST / (read-only, all tiers)
+├── jito/                             # Jito bundle methods
+│   ├── sendBundle.yaml               #   POST /jito (Staked tiers only)
+│   └── simulateBundle.yaml           #   POST / (read-only, all tiers)
+└── rewind/                           # Rewind historical-archive RPC
+    ├── getAccountInfo.yaml           #   each spec has one POST / operation
+    ├── getMultipleAccounts.yaml
+    ├── getAccountChanges.yaml
+    ├── getAccountDiff.yaml
+    ├── getRewindCoverage.yaml
+    └── simulateHistoricalTransaction.yaml
 ```
 
 ## Why one file per method
@@ -61,25 +68,13 @@ The generator is also responsible for the layout of this directory — adding a
 new method to the appropriate `_METHODS` list automatically produces a new
 `<methodName>.yaml` file in the right subdirectory.
 
-The `svs-api.yaml`, `lightspeed/lightspeed.yaml`, `jito/sendBundle.yaml`, and
-`jito/simulateBundle.yaml` specs are the exceptions: they're hand-authored
-because they document either a real REST API (svs-api) or transaction-sending
-endpoints whose shapes don't fit the standard JSON-RPC method pattern. None of
-these are emitted by the generator; edit the YAML directly.
+The `svs-api.yaml`, `lightspeed/`, `jito/`, and `rewind/` specs are the
+exceptions: they're hand-authored because they document either a real REST API
+(svs-api), transaction-sending endpoints whose shapes don't fit the standard
+JSON-RPC method pattern (lightspeed, jito), or a separate JSON-RPC service
+with its own custom params/result shapes (rewind). None of these are emitted
+by the generator; edit the YAML directly.
 
 ## Connecting to GitBook
 
-In your GitBook space, register each spec as its own OpenAPI source via
-**Sidebar → OpenAPI → Add specification → URL**, pointed at the raw GitHub URL
-for the file. For example:
-
-```
-https://raw.githubusercontent.com/<owner>/svs-docs/main/api-specs/solana-rpc/getBalance.yaml
-```
-
-Then embed the operation in any markdown page with a single block:
-
-```
-{% openapi-operation spec="solanaRpcGetBalance" path="/" method="post" %}
-{% endopenapi-operation %}
-```
+In your GitBook space, register each spec as its own 
