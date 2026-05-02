@@ -20,11 +20,16 @@ Outputs (overwrites):
 
 from __future__ import annotations
 
+import os
 import sys
 import textwrap
 from collections import OrderedDict
 
 import yaml
+
+# Local module — sibling file in the scripts/ folder.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import code_samples  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +129,14 @@ def _params_schema(params):
     ])
 
 
-def _request_body(method_name, params, example_params):
+def _request_body(method_name, params, example_params, extra_examples=None):
+    """Build a requestBody with multiple named examples.
+
+    The first example ("default") is built from `example_params`. Any
+    `extra_examples` items (cap of 2) become additional named examples.
+    GitBook renders these as a dropdown in the Test-It panel; the
+    `default` key is the initially-selected one.
+    """
     request_schema = _OD([
         ("type", "object"),
         ("required", ["jsonrpc", "id", "method", "params"]),
@@ -152,17 +164,32 @@ def _request_body(method_name, params, example_params):
             ("params", _params_schema(params)),
         ])),
     ])
+    examples = _OD()
+    examples["default"] = _OD([
+        ("summary", "Standard request — required params only."),
+        ("value", _OD([
+            ("jsonrpc", "2.0"),
+            ("id", 1),
+            ("method", method_name),
+            ("params", example_params),
+        ])),
+    ])
+    for ex in (extra_examples or [])[:2]:
+        examples[ex["name"]] = _OD([
+            ("summary", ex["summary"]),
+            ("value", _OD([
+                ("jsonrpc", "2.0"),
+                ("id", 1),
+                ("method", method_name),
+                ("params", ex["params"]),
+            ])),
+        ])
     return _OD([
         ("required", True),
         ("content", _OD([
             ("application/json", _OD([
                 ("schema", request_schema),
-                ("example", _OD([
-                    ("jsonrpc", "2.0"),
-                    ("id", 1),
-                    ("method", method_name),
-                    ("params", example_params),
-                ])),
+                ("examples", examples),
             ])),
         ])),
     ])
@@ -194,11 +221,14 @@ def _success_response(method_name, result_schema, result_example):
     ])
 
 
-def build_operation(method, base_note=ENDPOINT_NOTE):
+def build_operation(method, base_note=ENDPOINT_NOTE, historical=False):
+    """Build a single OpenAPI Operation, including x-codeSamples and a
+    multi-example requestBody.
+
+    `historical=True` switches all code samples + curl URLs to the
+    /historical path on the public endpoint."""
     name = method["name"]
     summary = f"{name} — {method['summary']}"
-    # Per-operation description; the root-path note has been intentionally
-    # dropped — see info.description for that context.
     description = method["description"].rstrip()
     if method.get("params"):
         description += "\n**Parameters**\n\n"
@@ -206,27 +236,40 @@ def build_operation(method, base_note=ENDPOINT_NOTE):
             req = "required" if p.get("required") else "optional"
             description += f"{idx}. `{p['name']}` ({req}) — {p['schema_doc']}\n"
 
+    extra_examples = code_samples.EXTRA_EXAMPLES.get(name, [])
+
+    if historical:
+        x_samples = code_samples.historical_code_samples_for(name, method["params_example"])
+    else:
+        x_samples = code_samples.code_samples_for(name, method["params_example"])
+
     op = _OD([
         ("operationId", name),
         ("summary", summary),
         ("tags", [method["tag"]]),
         ("description", description),
-        ("requestBody", _request_body(name, method.get("params", []), method["params_example"])),
+        ("requestBody", _request_body(name, method.get("params", []), method["params_example"], extra_examples)),
         ("responses", _OD([
             ("200", _success_response(name, method["result_schema"], method["result_example"])),
         ])),
         ("security", SECURITY),
+        # Redocly / GitBook custom extension: language-specific code samples,
+        # rendered as tabs above the "Test it" panel. cURL is the default tab.
+        ("x-codeSamples", [
+            _OD([("lang", s["lang"]), ("label", s["label"]), ("source", s["source"])])
+            for s in x_samples
+        ]),
     ])
     for code, body in STANDARD_RESPONSES.items():
         op["responses"][code] = body
     return op
 
 
-def build_paths(methods, base_path_prefix="", base_note=ENDPOINT_NOTE):
+def build_paths(methods, base_path_prefix="", base_note=ENDPOINT_NOTE, historical=False):
     paths = _OD()
     for m in methods:
         path = f"{base_path_prefix}/{m['name']}"
-        paths[path] = _OD([("post", build_operation(m, base_note=base_note))])
+        paths[path] = _OD([("post", build_operation(m, base_note=base_note, historical=historical))])
     return paths
 
 
@@ -1486,7 +1529,7 @@ def assemble_spec(*, title, description, version, servers, tags, paths):
 
 def main(out_dir):
     solana_paths = build_paths(SOLANA_METHODS, base_path_prefix="", base_note=ENDPOINT_NOTE)
-    historical_paths = build_paths(HISTORICAL_METHODS, base_path_prefix="/historical", base_note=HISTORICAL_ENDPOINT_NOTE)
+    historical_paths = build_paths(HISTORICAL_METHODS, base_path_prefix="/historical", base_note=HISTORICAL_ENDPOINT_NOTE, historical=True)
 
     solana_spec = assemble_spec(
         title="Solana Vibe Station RPC",

@@ -139,14 +139,39 @@ paths:
                               format: int64
                               description: Number of bytes to include in the slice, starting from `offset`.
                               example: 64
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getAccountInfo
-              params:
-              - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-              - encoding: base64
-                commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getAccountInfo
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - encoding: base64
+                    commitment: finalized
+              json_parsed:
+                summary: Use jsonParsed to get program-aware decoding (e.g. SPL token accounts).
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getAccountInfo
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - encoding: jsonParsed
+                    commitment: finalized
+              with_data_slice:
+                summary: Fetch only the first 64 bytes of the account's data field.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getAccountInfo
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - encoding: base64
+                    dataSlice:
+                      offset: 0
+                      length: 64
       responses:
         '200':
           description: Successful `getAccountInfo` response.
@@ -197,6 +222,46 @@ paths:
       - {}
       - AuthHeader: []
       - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getAccountInfo","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",{"encoding":"base64","commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          pubkey = Pubkey.from_string("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")
+          resp = client.get_account_info(pubkey, encoding="base64")
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const pubkey = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq");
+          const accountInfo = await connection.getAccountInfo(pubkey);
+          console.log(accountInfo);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let pubkey = Pubkey::from_str("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")?;
+          let account = client.get_account(&pubkey)?;
+          println!("{:?}", account);
   /getBalance:
     post:
       operationId: getBalance
@@ -261,13 +326,35 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBalance
-              params:
-              - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBalance
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - commitment: finalized
+              with_commitment:
+                summary: Specify a commitment level explicitly.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBalance
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - commitment: confirmed
+              with_min_context_slot:
+                summary: Require the node's root to be at or above a specific slot before responding.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBalance
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - commitment: confirmed
+                    minContextSlot: 416990000
       responses:
         '200':
           description: Successful `getBalance` response.
@@ -306,6 +393,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBalance","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          pubkey = Pubkey.from_string("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")
+          resp = client.get_balance(pubkey)
+          print(f"{resp.value} lamports")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const pubkey = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq");
+          const lamports = await connection.getBalance(pubkey);
+          console.log(`${lamports} lamports`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let pubkey = Pubkey::from_str("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")?;
+          let lamports = client.get_balance(&pubkey)?;
+          println!("{} lamports", lamports);
   /getMultipleAccounts:
     post:
       operationId: getMultipleAccounts
@@ -391,14 +518,27 @@ paths:
                               format: int64
                               description: Number of bytes to include in the slice, starting from `offset`.
                               example: 64
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getMultipleAccounts
-              params:
-              - - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-                - '11111111111111111111111111111111'
-              - encoding: base64
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getMultipleAccounts
+                  params:
+                  - - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - '11111111111111111111111111111111'
+                  - encoding: base64
+              json_parsed:
+                summary: Decode known program account layouts (SPL token, stake, etc.) with jsonParsed.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getMultipleAccounts
+                  params:
+                  - - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - '11111111111111111111111111111111'
+                  - encoding: jsonParsed
       responses:
         '200':
           description: Successful `getMultipleAccounts` response.
@@ -446,6 +586,56 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getMultipleAccounts","params":[["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri","11111111111111111111111111111111"],{"encoding":"base64"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          pubkeys = [
+              Pubkey.from_string("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"),
+              Pubkey.from_string("11111111111111111111111111111111"),
+          ]
+          resp = client.get_multiple_accounts(pubkeys, encoding="base64")
+          for i, account in enumerate(resp.value):
+              print(f"{pubkeys[i]}: {account}")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const pubkeys = [
+            new PublicKey("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"),
+            new PublicKey("11111111111111111111111111111111"),
+          ];
+          const accounts = await connection.getMultipleAccountsInfo(pubkeys);
+          console.log(accounts);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let pubkeys = [
+              Pubkey::from_str("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri")?,
+              Pubkey::from_str("11111111111111111111111111111111")?,
+          ];
+          let accounts = client.get_multiple_accounts(&pubkeys)?;
+          println!("{:?}", accounts);
   /getProgramAccounts:
     post:
       operationId: getProgramAccounts
@@ -557,15 +747,43 @@ paths:
                           type: boolean
                           description: If true, wrap the response in a `{context, value}` envelope. Default is false (return the array directly).
                           example: true
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getProgramAccounts
-              params:
-              - TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
-              - encoding: base64
-                filters:
-                - dataSize: 165
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getProgramAccounts
+                  params:
+                  - TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
+                  - encoding: base64
+                    filters:
+                    - dataSize: 165
+              with_filters:
+                summary: Filter by data size + memcmp on the SPL Token program (mint authority offset).
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getProgramAccounts
+                  params:
+                  - TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
+                  - encoding: base64
+                    filters:
+                    - dataSize: 165
+                    - memcmp:
+                        offset: 0
+                        bytes: 3Mc6vR
+                        encoding: base58
+              with_context:
+                summary: Wrap the response in a `{context, value}` envelope so you get the slot back too.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getProgramAccounts
+                  params:
+                  - TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
+                  - encoding: base64
+                    withContext: true
       responses:
         '200':
           description: Successful `getProgramAccounts` response.
@@ -610,6 +828,50 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getProgramAccounts","params":["TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq",{"encoding":"base64","filters":[{"dataSize":165}]}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          from solana.rpc.types import MemcmpOpts
+          from solana.rpc.api import Client
+          program_id = Pubkey.from_string("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")
+          resp = client.get_program_accounts(program_id, encoding="base64")
+          print(f"{len(resp.value)} accounts")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const programId = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq");
+          const accounts = await connection.getProgramAccounts(programId, {
+            filters: [{ dataSize: 165 }],
+          });
+          console.log(`${accounts.length} accounts`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let program_id = Pubkey::from_str("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")?;
+          let accounts = client.get_program_accounts(&program_id)?;
+          println!("{} accounts", accounts.len());
   /getTokenAccountBalance:
     post:
       operationId: getTokenAccountBalance
@@ -674,13 +936,16 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTokenAccountBalance
-              params:
-              - 7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTokenAccountBalance
+                  params:
+                  - 7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getTokenAccountBalance` response.
@@ -720,6 +985,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTokenAccountBalance","params":["7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi",{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          token_account = Pubkey.from_string("7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi")
+          resp = client.get_token_account_balance(token_account)
+          print(f"{resp.value.ui_amount_string} ({resp.value.amount} raw)")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const tokenAccount = new PublicKey("7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi");
+          const balance = await connection.getTokenAccountBalance(tokenAccount);
+          console.log(balance.value.uiAmountString);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let token_account = Pubkey::from_str("7UVpfyV3PzWxNw3pcU88WGGgC4XSiTNVTPMK6P7vrqCi")?;
+          let balance = client.get_token_account_balance(&token_account)?;
+          println!("{}", balance.ui_amount_string);
   /getTokenAccountsByDelegate:
     post:
       operationId: getTokenAccountsByDelegate
@@ -799,14 +1104,17 @@ paths:
                           example: 416990000
                         encoding:
                           $ref: '#/components/schemas/Encoding'
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTokenAccountsByDelegate
-              params:
-              - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-              - programId: TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
-              - encoding: jsonParsed
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTokenAccountsByDelegate
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - programId: TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
+                  - encoding: jsonParsed
       responses:
         '200':
           description: Successful `getTokenAccountsByDelegate` response.
@@ -849,6 +1157,51 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTokenAccountsByDelegate","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",{"programId":"TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq"},{"encoding":"jsonParsed"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          from solana.rpc.types import TokenAccountOpts
+          delegate = Pubkey.from_string("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri")
+          opts = TokenAccountOpts(program_id=Pubkey.from_string("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq"))
+          resp = client.get_token_accounts_by_delegate(delegate, opts)
+          print(f"{len(resp.value)} delegated accounts")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const delegate = new PublicKey("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri");
+          const tokenProgram = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq");
+          const accounts = await connection.getTokenAccountsByDelegate(delegate, { programId: tokenProgram });
+          console.log(`${accounts.value.length} delegated accounts`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_client::rpc_request::TokenAccountsFilter;
+          let delegate = Pubkey::from_str("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri")?;
+          let token_program = Pubkey::from_str("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")?;
+          let accounts = client.get_token_accounts_by_delegate(&delegate, TokenAccountsFilter::ProgramId(token_program))?;
+          println!("{} delegated accounts", accounts.len());
   /getTokenAccountsByOwner:
     post:
       operationId: getTokenAccountsByOwner
@@ -928,14 +1281,17 @@ paths:
                           example: 416990000
                         encoding:
                           $ref: '#/components/schemas/Encoding'
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTokenAccountsByOwner
-              params:
-              - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-              - programId: TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
-              - encoding: jsonParsed
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTokenAccountsByOwner
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - programId: TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
+                  - encoding: jsonParsed
       responses:
         '200':
           description: Successful `getTokenAccountsByOwner` response.
@@ -978,6 +1334,51 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTokenAccountsByOwner","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",{"programId":"TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq"},{"encoding":"jsonParsed"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          from solana.rpc.types import TokenAccountOpts
+          owner = Pubkey.from_string("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri")
+          opts = TokenAccountOpts(program_id=Pubkey.from_string("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq"))
+          resp = client.get_token_accounts_by_owner(owner, opts)
+          print(f"{len(resp.value)} token accounts")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const owner = new PublicKey("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri");
+          const tokenProgram = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq");
+          const accounts = await connection.getTokenAccountsByOwner(owner, { programId: tokenProgram });
+          console.log(`${accounts.value.length} token accounts`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_client::rpc_request::TokenAccountsFilter;
+          let owner = Pubkey::from_str("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri")?;
+          let token_program = Pubkey::from_str("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")?;
+          let accounts = client.get_token_accounts_by_owner(&owner, TokenAccountsFilter::ProgramId(token_program))?;
+          println!("{} token accounts", accounts.len());
   /getTokenLargestAccounts:
     post:
       operationId: getTokenLargestAccounts
@@ -1042,12 +1443,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTokenLargestAccounts
-              params:
-              - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTokenLargestAccounts
+                  params:
+                  - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
       responses:
         '200':
           description: Successful `getTokenLargestAccounts` response.
@@ -1103,6 +1507,51 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTokenLargestAccounts","params":["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          mint = Pubkey.from_string("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")
+          resp = client.get_token_largest_accounts(mint)
+          for entry in resp.value[:5]:
+              print(f"{entry.address}: {entry.ui_amount_string}")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const mint = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+          const largest = await connection.getTokenLargestAccounts(mint);
+          for (const entry of largest.value.slice(0, 5)) {
+            console.log(`${entry.address}: ${entry.uiAmountString}`);
+          }
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let mint = Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")?;
+          let largest = client.get_token_largest_accounts(&mint)?;
+          for entry in largest.iter().take(5) {
+              println!("{}: {}", entry.address, entry.ui_amount_string);
+          }
   /getTokenSupply:
     post:
       operationId: getTokenSupply
@@ -1167,12 +1616,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTokenSupply
-              params:
-              - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTokenSupply
+                  params:
+                  - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
       responses:
         '200':
           description: Successful `getTokenSupply` response.
@@ -1212,6 +1664,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTokenSupply","params":["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          mint = Pubkey.from_string("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")
+          resp = client.get_token_supply(mint)
+          print(f"{resp.value.ui_amount_string} {mint}")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const mint = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+          const supply = await connection.getTokenSupply(mint);
+          console.log(supply.value.uiAmountString);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let mint = Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")?;
+          let supply = client.get_token_supply(&mint)?;
+          println!("{}", supply.ui_amount_string);
   /getBlock:
     post:
       operationId: getBlock
@@ -1289,14 +1781,38 @@ paths:
                           type: integer
                           format: int64
                           description: 0 includes versioned transactions; omit for legacy-only.
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlock
-              params:
-              - 416997240
-              - maxSupportedTransactionVersion: 0
-                transactionDetails: full
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                  - 416997240
+                  - maxSupportedTransactionVersion: 0
+                    transactionDetails: full
+              signatures_only:
+                summary: Fetch a block but only return signatures, not full transactions. Much smaller payload.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                  - 416997240
+                  - transactionDetails: signatures
+                    rewards: false
+                    maxSupportedTransactionVersion: 0
+              with_rewards:
+                summary: Include block-level rewards (stake/voting payouts) in the response.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                  - 416997240
+                  - rewards: true
+                    maxSupportedTransactionVersion: 0
       responses:
         '200':
           description: Successful `getBlock` response.
@@ -1358,6 +1874,44 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlock","params":[416997240,{"maxSupportedTransactionVersion":0,"transactionDetails":"full"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_block(slot=416997240, max_supported_transaction_version=0)
+          print(f"blockhash={resp.value.blockhash} txs={len(resp.value.transactions or [])}")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const block = await connection.getBlock(416997240, { maxSupportedTransactionVersion: 0 });
+          console.log(`blockhash=${block.blockhash} txs=${block.transactions.length}`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_transaction_status::UiTransactionEncoding;
+          let block = client.get_block_with_encoding(416997240, UiTransactionEncoding::Json)?;
+          println!("blockhash={} txs={}", block.blockhash, block.transactions.len());
   /getBlockHeight:
     post:
       operationId: getBlockHeight
@@ -1417,12 +1971,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlockHeight
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlockHeight
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getBlockHeight` response.
@@ -1449,6 +2006,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlockHeight","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_block_height().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getBlockHeight());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_block_height()?);
   /getBlocks:
     post:
       operationId: getBlocks
@@ -1518,13 +2109,24 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlocks
-              params:
-              - 416997230
-              - 416997240
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlocks
+                  params:
+                  - 416997230
+                  - 416997240
+              open_ended:
+                summary: Pass only `startSlot`; the node returns up to ~500k subsequent confirmed blocks.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlocks
+                  params:
+                  - 416997230
       responses:
         '200':
           description: Successful `getBlocks` response.
@@ -1557,6 +2159,43 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlocks","params":[416997230,416997240]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_blocks(start_slot=416997230, end_slot=416997240)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const blocks = await connection.getBlocks(416997230, 416997240);
+          console.log(blocks);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let blocks = client.get_blocks(416997230, Some(416997240))?;
+          println!("{:?}", blocks);
   /getBlocksWithLimit:
     post:
       operationId: getBlocksWithLimit
@@ -1627,13 +2266,16 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlocksWithLimit
-              params:
-              - 416997230
-              - 10
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlocksWithLimit
+                  params:
+                  - 416997230
+                  - 10
       responses:
         '200':
           description: Successful `getBlocksWithLimit` response.
@@ -1670,6 +2312,48 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlocksWithLimit","params":[416997230,10]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # solana-py doesn't expose this directly; use the raw transport.
+          import requests
+          r = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1, "method": "getBlocksWithLimit",
+              "params": [416997230, 10]
+          }).json()
+          print(r["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const blocks = await connection.getBlocksWithLimit(416997230, 10);
+          console.log(blocks);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let blocks = client.get_blocks_with_limit(416997230, 10)?;
+          println!("{:?}", blocks);
   /getBlockTime:
     post:
       operationId: getBlockTime
@@ -1722,12 +2406,15 @@ paths:
                       type: integer
                       format: int64
                       example: 416997240
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlockTime
-              params:
-              - 378967388
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlockTime
+                  params:
+                  - 378967388
       responses:
         '200':
           description: Successful `getBlockTime` response.
@@ -1754,6 +2441,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlockTime","params":[378967388]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_block_time(416997240).value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getBlockTime(416997240));
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_block_time(416997240)?);
   /getBlockCommitment:
     post:
       operationId: getBlockCommitment
@@ -1806,12 +2527,15 @@ paths:
                       type: integer
                       format: int64
                       example: 416997240
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlockCommitment
-              params:
-              - 378967388
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlockCommitment
+                  params:
+                  - 378967388
       responses:
         '200':
           description: Successful `getBlockCommitment` response.
@@ -1879,6 +2603,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlockCommitment","params":[378967388]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_block_commitment(416997240).value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // Not exposed by web3.js — use the raw RPC fallback shown in the cURL tab.
+          const r = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBlockCommitment", params: [416997240] }),
+          });
+          console.log((await r.json()).result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let commitment = client.get_block_commitment(416997240)?;
+          println!("{:?}", commitment);
   /getBlockProduction:
     post:
       operationId: getBlockProduction
@@ -1956,12 +2720,15 @@ paths:
                               format: int64
                               description: Last slot in the range, inclusive.
                               example: 416997240
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlockProduction
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlockProduction
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getBlockProduction` response.
@@ -2022,6 +2789,50 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlockProduction","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          import requests
+          r = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1, "method": "getBlockProduction", "params": []
+          }).json()
+          print(r["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // web3.js does not expose this method. Raw RPC fallback:
+          const r = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBlockProduction", params: [] }),
+          });
+          console.log((await r.json()).result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let production = client.get_block_production()?;
+          println!("{:?}", production.value);
   /getClusterNodes:
     post:
       operationId: getClusterNodes
@@ -2063,11 +2874,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getClusterNodes
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getClusterNodes
+                  params: []
       responses:
         '200':
           description: Successful `getClusterNodes` response.
@@ -2123,6 +2937,43 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getClusterNodes","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_cluster_nodes()
+          print(f"{len(resp.value)} nodes")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const nodes = await connection.getClusterNodes();
+          console.log(`${nodes.length} nodes`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let nodes = client.get_cluster_nodes()?;
+          println!("{} nodes", nodes.len());
   /getEpochInfo:
     post:
       operationId: getEpochInfo
@@ -2182,12 +3033,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getEpochInfo
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getEpochInfo
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getEpochInfo` response.
@@ -2237,6 +3091,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getEpochInfo","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_epoch_info().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getEpochInfo());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{:?}", client.get_epoch_info()?);
   /getEpochSchedule:
     post:
       operationId: getEpochSchedule
@@ -2278,11 +3166,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getEpochSchedule
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getEpochSchedule
+                  params: []
       responses:
         '200':
           description: Successful `getEpochSchedule` response.
@@ -2326,6 +3217,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getEpochSchedule","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_epoch_schedule().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getEpochSchedule());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{:?}", client.get_epoch_schedule()?);
   /getGenesisHash:
     post:
       operationId: getGenesisHash
@@ -2367,11 +3292,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getGenesisHash
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getGenesisHash
+                  params: []
       responses:
         '200':
           description: Successful `getGenesisHash` response.
@@ -2396,6 +3324,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getGenesisHash","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_genesis_hash().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getGenesisHash());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_genesis_hash()?);
   /getHealth:
     post:
       operationId: getHealth
@@ -2437,11 +3399,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getHealth
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getHealth
+                  params: []
       responses:
         '200':
           description: Successful `getHealth` response.
@@ -2468,6 +3433,50 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getHealth","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # Not exposed by solana-py — use the underlying HTTP transport.
+          import requests
+          r = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1, "method": "getHealth", "params": []
+          }).json()
+          print(r["result"])  # "ok" if healthy
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // Not exposed by web3.js — use the raw RPC fallback.
+          const r = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getHealth", params: [] }),
+          });
+          console.log((await r.json()).result);  // "ok" if healthy
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_health().map(|_| "ok").unwrap_or("unhealthy"));
   /getIdentity:
     post:
       operationId: getIdentity
@@ -2509,11 +3518,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getIdentity
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getIdentity
+                  params: []
       responses:
         '200':
           description: Successful `getIdentity` response.
@@ -2541,6 +3553,45 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getIdentity","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_identity().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // Not exposed by web3.js — use the raw RPC fallback.
+          const r = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getIdentity", params: [] }),
+          });
+          console.log((await r.json()).result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_identity()?);
   /getVersion:
     post:
       operationId: getVersion
@@ -2582,11 +3633,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getVersion
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getVersion
+                  params: []
       responses:
         '200':
           description: Successful `getVersion` response.
@@ -2618,6 +3672,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getVersion","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_version().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getVersion());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{:?}", client.get_version()?);
   /getFeeForMessage:
     post:
       operationId: getFeeForMessage
@@ -2682,13 +3770,16 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getFeeForMessage
-              params:
-              - AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q==
-              - commitment: processed
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getFeeForMessage
+                  params:
+                  - AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q==
+                  - commitment: processed
       responses:
         '200':
           description: Successful `getFeeForMessage` response.
@@ -2727,6 +3818,63 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getFeeForMessage","params":["AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q==",{"commitment":"processed"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # `message` is a base-64 encoded compiled Message (not a full Transaction).
+          from solders.message import to_bytes_versioned
+          import base64
+          # msg_bytes = to_bytes_versioned(my_versioned_message)
+          # encoded = base64.b64encode(msg_bytes).decode()
+          encoded = "AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q=="
+          resp = client.get_fee_for_message(encoded)
+          print(resp.value, "lamports")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // `message` is the compiled Message of your transaction.
+          // const { value: fee } = await connection.getFeeForMessage(transaction.compileMessage());
+          const encoded = "AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q==";
+          const r = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getFeeForMessage", params: [encoded] }),
+          });
+          console.log((await r.json()).result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          // In production, build a Message with solana_sdk::message::Message and call:
+          //   client.get_fee_for_message(&my_message)?
+          // Here we show the equivalent raw JSON-RPC call:
+          let body = serde_json::json!({
+              "jsonrpc": "2.0", "id": 1, "method": "getFeeForMessage",
+              "params": ["AQABA0PJ8nGUKkR2lKZ8VcWQYWQzTGYYNCPdjhq2WaqLNUowVnPB6Q=="]
+          });
+          let resp: serde_json::Value = reqwest::blocking::Client::new()
+              .post("https://public.rpc.solanavibestation.com").json(&body).send()?.json()?;
+          println!("{}", resp["result"]);
   /getLatestBlockhash:
     post:
       operationId: getLatestBlockhash
@@ -2786,12 +3934,23 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getLatestBlockhash
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getLatestBlockhash
+                  params:
+                  - commitment: finalized
+              processed:
+                summary: Get the very latest blockhash regardless of confirmation. Useful pre-tx-build.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getLatestBlockhash
+                  params:
+                  - commitment: processed
       responses:
         '200':
           description: Successful `getLatestBlockhash` response.
@@ -2835,6 +3994,45 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getLatestBlockhash","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_latest_blockhash()
+          print(f"blockhash={resp.value.blockhash} valid_until={resp.value.last_valid_block_height}")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+          console.log(`blockhash=${blockhash} valid_until=${lastValidBlockHeight}`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let (blockhash, last_valid_block_height) = client.get_latest_blockhash_with_commitment(
+              solana_sdk::commitment_config::CommitmentConfig::finalized()
+          )?;
+          println!("blockhash={} valid_until={}", blockhash, last_valid_block_height);
   /isBlockhashValid:
     post:
       operationId: isBlockhashValid
@@ -2898,13 +4096,16 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: isBlockhashValid
-              params:
-              - 3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA
-              - commitment: processed
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: isBlockhashValid
+                  params:
+                  - 3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA
+                  - commitment: processed
       responses:
         '200':
           description: Successful `isBlockhashValid` response.
@@ -2941,6 +4142,52 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"isBlockhashValid","params":["3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA",{"commitment":"processed"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # Not exposed by solana-py — use the underlying HTTP transport.
+          import requests
+          r = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1, "method": "isBlockhashValid",
+              "params": ["3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA", {"commitment": "processed"}]
+          }).json()
+          print(r["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const blockhash = "3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA";
+          const valid = await connection.isBlockhashValid(blockhash, { commitment: "processed" });
+          console.log(valid);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_sdk::hash::Hash;
+          use solana_sdk::commitment_config::CommitmentConfig;
+          let blockhash = Hash::from_str("3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA")?;
+          let valid = client.is_blockhash_valid(&blockhash, CommitmentConfig::processed())?;
+          println!("{}", valid);
   /getMinimumBalanceForRentExemption:
     post:
       operationId: getMinimumBalanceForRentExemption
@@ -3005,13 +4252,16 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getMinimumBalanceForRentExemption
-              params:
-              - 165
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getMinimumBalanceForRentExemption
+                  params:
+                  - 165
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getMinimumBalanceForRentExemption` response.
@@ -3038,6 +4288,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getMinimumBalanceForRentExemption","params":[165,{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_minimum_balance_for_rent_exemption(165).value, "lamports")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getMinimumBalanceForRentExemption(165));
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{} lamports", client.get_minimum_balance_for_rent_exemption(165)?);
   /getRecentPrioritizationFees:
     post:
       operationId: getRecentPrioritizationFees
@@ -3093,12 +4377,24 @@ paths:
                         description: Account pubkey, base-58.
                         example: 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
                       description: Account pubkeys (max 128). Omit or pass an empty array for cluster-wide stats.
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getRecentPrioritizationFees
-              params:
-              - - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getRecentPrioritizationFees
+                  params:
+                  - - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+              for_specific_accounts:
+                summary: Scope to recent blocks that referenced the given accounts.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getRecentPrioritizationFees
+                  params:
+                  - - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                    - TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq
       responses:
         '200':
           description: Successful `getRecentPrioritizationFees` response.
@@ -3137,6 +4433,48 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getRecentPrioritizationFees","params":[["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri"]]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # solana-py doesn't expose this yet; use the underlying provider.
+          import requests
+          r = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1, "method": "getRecentPrioritizationFees", "params": [[]]
+          }).json()
+          for s in r["result"][:5]:
+              print(s)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const fees = await connection.getRecentPrioritizationFees();
+          for (const s of fees.slice(0, 5)) console.log(s);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let fees = client.get_recent_prioritization_fees(&[])?;
+          for s in fees.iter().take(5) { println!("{:?}", s); }
   /getSignaturesForAddress:
     post:
       operationId: getSignaturesForAddress
@@ -3216,13 +4554,26 @@ paths:
                           type: string
                           description: Search until this signature (inclusive). Use to bound the search to a recent window.
                           example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSignaturesForAddress
-              params:
-              - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-              - limit: 10
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignaturesForAddress
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - limit: 10
+              page_back:
+                summary: Paginate backwards by passing the last signature you've seen as `before`.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignaturesForAddress
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - limit: 1000
+                    before: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
       responses:
         '200':
           description: Successful `getSignaturesForAddress` response.
@@ -3277,6 +4628,49 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSignaturesForAddress","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",{"limit":10}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          address = Pubkey.from_string("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")
+          resp = client.get_signatures_for_address(address, limit=10)
+          for sig in resp.value:
+              print(sig.signature, sig.slot)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const address = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq");
+          const sigs = await connection.getSignaturesForAddress(address, { limit: 10 });
+          for (const s of sigs) console.log(s.signature, s.slot);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config;
+          let address = Pubkey::from_str("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")?;
+          let cfg = GetConfirmedSignaturesForAddress2Config { limit: Some(10), ..Default::default() };
+          let sigs = client.get_signatures_for_address_with_config(&address, cfg)?;
+          for s in &sigs { println!("{} {}", s.signature, s.slot); }
   /getSignatureStatuses:
     post:
       operationId: getSignatureStatuses
@@ -3348,13 +4742,25 @@ paths:
                           type: boolean
                           description: If true, look up signatures in the long-term ledger archive in addition to recent slots. Slower but covers older transactions. Default false.
                           example: true
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSignatureStatuses
-              params:
-              - - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-              - searchTransactionHistory: true
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignatureStatuses
+                  params:
+                  - - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - searchTransactionHistory: true
+              with_history:
+                summary: Search the long-term ledger archive in addition to recent slots.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignatureStatuses
+                  params:
+                  - - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - searchTransactionHistory: true
       responses:
         '200':
           description: Successful `getSignatureStatuses` response.
@@ -3416,6 +4822,48 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSignatureStatuses","params":[["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"],{"searchTransactionHistory":true}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          from solders.signature import Signature
+          sigs = [Signature.from_string("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")]
+          resp = client.get_signature_statuses(sigs, search_transaction_history=True)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const sigs = ["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"];
+          const statuses = await connection.getSignatureStatuses(sigs, { searchTransactionHistory: true });
+          console.log(statuses.value);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_sdk::signature::Signature;
+          let sigs = [Signature::from_str("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")?];
+          let statuses = client.get_signature_statuses_with_history(&sigs)?;
+          println!("{:?}", statuses.value);
   /getTransaction:
     post:
       operationId: getTransaction
@@ -3487,13 +4935,16 @@ paths:
                           format: int64
                           description: Highest transaction version the client can handle. Set to 0 to receive versioned (v0) transactions; omit to receive only legacy (pre-v0) transactions.
                           example: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTransaction
-              params:
-              - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-              - maxSupportedTransactionVersion: 0
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTransaction
+                  params:
+                  - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - maxSupportedTransactionVersion: 0
       responses:
         '200':
           description: Successful `getTransaction` response.
@@ -3552,6 +5003,49 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTransaction","params":["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa",{"maxSupportedTransactionVersion":0}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          from solders.signature import Signature
+          sig = Signature.from_string("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")
+          resp = client.get_transaction(sig, max_supported_transaction_version=0)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const sig = "4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa";
+          const tx = await connection.getTransaction(sig, { maxSupportedTransactionVersion: 0 });
+          console.log(tx);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_sdk::signature::Signature;
+          use solana_transaction_status::UiTransactionEncoding;
+          let sig = Signature::from_str("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")?;
+          let tx = client.get_transaction(&sig, UiTransactionEncoding::Json)?;
+          println!("{:?}", tx);
   /getTransactionCount:
     post:
       operationId: getTransactionCount
@@ -3611,12 +5105,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTransactionCount
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTransactionCount
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getTransactionCount` response.
@@ -3641,6 +5138,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTransactionCount","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_transaction_count().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getTransactionCount());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_transaction_count()?);
   /sendTransaction:
     post:
       operationId: sendTransaction
@@ -3719,14 +5250,26 @@ paths:
                           format: int64
                           description: Maximum number of retries when forwarding to the leader. Default unlimited (until blockhash expires).
                           example: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: sendTransaction
-              params:
-              - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-              - skipPreflight: false
-                preflightCommitment: processed
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: sendTransaction
+                  params:
+                  - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - skipPreflight: false
+                    preflightCommitment: processed
+              skip_preflight:
+                summary: Skip preflight simulation when you trust the transaction (saves latency).
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: sendTransaction
+                  params:
+                  - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - skipPreflight: true
       responses:
         '200':
           description: Successful `sendTransaction` response.
@@ -3751,6 +5294,64 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"sendTransaction","params":["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa",{"skipPreflight":false,"preflightCommitment":"processed"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # Build and sign the transaction first; here we send pre-encoded bytes.
+          # In real usage:  resp = client.send_transaction(my_signed_tx)
+          #                 print(resp.value)
+          # The example below uses send_raw_transaction with already-signed bytes.
+          from solana.rpc.types import TxOpts
+          raw_tx_bytes = bytes.fromhex("00")  # replace with your signed tx bytes
+          resp = client.send_raw_transaction(raw_tx_bytes, opts=TxOpts(skip_preflight=False, preflight_commitment="processed"))
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // Build and sign the transaction with your keypair first; here
+          // we send pre-serialized bytes.
+          // const sig = await connection.sendTransaction(signedTx, { skipPreflight: false, preflightCommitment: "processed" });
+          const rawTx = Buffer.from("00", "hex");  // replace with your signed tx bytes
+          const sig = await connection.sendRawTransaction(rawTx, {
+            skipPreflight: false,
+            preflightCommitment: "processed",
+          });
+          console.log(sig);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_sdk::transaction::Transaction;
+          use solana_client::rpc_config::RpcSendTransactionConfig;
+          // Build & sign your `Transaction` first, then:
+          // let sig = client.send_transaction_with_config(&tx, RpcSendTransactionConfig {
+          //     skip_preflight: false,
+          //     preflight_commitment: Some(CommitmentLevel::Processed),
+          //     ..Default::default()
+          // })?;
+          // println!("{}", sig);
+          println!("requires a built+signed Transaction — see the docs above");
   /simulateTransaction:
     post:
       operationId: simulateTransaction
@@ -3840,14 +5441,31 @@ paths:
                               description: Pubkeys of accounts whose post-simulation state to return.
                             encoding:
                               $ref: '#/components/schemas/Encoding'
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: simulateTransaction
-              params:
-              - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-              - sigVerify: false
-                replaceRecentBlockhash: true
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: simulateTransaction
+                  params:
+                  - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - sigVerify: false
+                    replaceRecentBlockhash: true
+              with_account_state:
+                summary: Return post-simulation state for specific accounts.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: simulateTransaction
+                  params:
+                  - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - sigVerify: false
+                    replaceRecentBlockhash: true
+                    accounts:
+                      addresses:
+                      - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                      encoding: base64
       responses:
         '200':
           description: Successful `simulateTransaction` response.
@@ -3917,6 +5535,53 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"simulateTransaction","params":["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa",{"sigVerify":false,"replaceRecentBlockhash":true}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # Build the transaction first; here we show the call shape.
+          from solana.rpc.types import TxOpts
+          from solders.transaction import VersionedTransaction
+          # resp = client.simulate_transaction(my_versioned_tx, sig_verify=False, replace_recent_blockhash=True)
+          # print(resp.value.logs)
+          print("Build a VersionedTransaction first, then call client.simulate_transaction(tx)")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // Build a VersionedTransaction first.
+          // const sim = await connection.simulateTransaction(versionedTx, { sigVerify: false, replaceRecentBlockhash: true });
+          // console.log(sim.value.logs);
+          console.log("Build a VersionedTransaction first, then call connection.simulateTransaction(tx)");
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          use solana_client::rpc_config::RpcSimulateTransactionConfig;
+          // let sim = client.simulate_transaction_with_config(&tx, RpcSimulateTransactionConfig {
+          //     sig_verify: false, replace_recent_blockhash: true, ..Default::default()
+          // })?;
+          // println!("{:?}", sim.value.logs);
+          println!("Build & sign a Transaction first, then simulate_transaction_with_config");
   /getSlot:
     post:
       operationId: getSlot
@@ -3976,12 +5641,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSlot
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSlot
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getSlot` response.
@@ -4007,6 +5675,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_slot().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getSlot());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_slot()?);
   /getSlotLeader:
     post:
       operationId: getSlotLeader
@@ -4066,12 +5768,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSlotLeader
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSlotLeader
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getSlotLeader` response.
@@ -4095,6 +5800,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSlotLeader","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_slot_leader().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getSlotLeader());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.get_slot_leader()?);
   /getSlotLeaders:
     post:
       operationId: getSlotLeaders
@@ -4152,13 +5891,16 @@ paths:
                       type: integer
                       format: int64
                       example: 10
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSlotLeaders
-              params:
-              - 416997230
-              - 10
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSlotLeaders
+                  params:
+                  - 416997230
+                  - 10
       responses:
         '200':
           description: Successful `getSlotLeaders` response.
@@ -4194,6 +5936,43 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSlotLeaders","params":[416997230,10]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_slot_leaders(start_slot=416997230, limit=10)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const leaders = await connection.getSlotLeaders(416997230, 10);
+          console.log(leaders);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let leaders = client.get_slot_leaders(416997230, 10)?;
+          println!("{:?}", leaders);
   /getLeaderSchedule:
     post:
       operationId: getLeaderSchedule
@@ -4262,13 +6041,16 @@ paths:
                           type: string
                           description: Filter to a single validator identity (base-58 pubkey).
                           example: FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getLeaderSchedule
-              params:
-              - null
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getLeaderSchedule
+                  params:
+                  - null
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getLeaderSchedule` response.
@@ -4305,6 +6087,43 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getLeaderSchedule","params":[null,{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_leader_schedule()
+          print(f"{len(resp.value or {})} leaders")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const schedule = await connection.getLeaderSchedule();
+          console.log(`${Object.keys(schedule || {}).length} leaders`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let schedule = client.get_leader_schedule(None)?;
+          println!("{} leaders", schedule.map(|s| s.len()).unwrap_or(0));
   /getStakeMinimumDelegation:
     post:
       operationId: getStakeMinimumDelegation
@@ -4364,12 +6183,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getStakeMinimumDelegation
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getStakeMinimumDelegation
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getStakeMinimumDelegation` response.
@@ -4407,6 +6229,50 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getStakeMinimumDelegation","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          # Not exposed by solana-py — use the underlying HTTP transport.
+          import requests
+          r = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1, "method": "getStakeMinimumDelegation", "params": []
+          }).json()
+          print(r["result"]["value"], "lamports")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // web3.js does not expose this method directly. Raw RPC fallback:
+          const r = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getStakeMinimumDelegation", params: [] }),
+          });
+          console.log((await r.json()).result.value, "lamports");
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{} lamports", client.get_stake_minimum_delegation()?);
   /getVoteAccounts:
     post:
       operationId: getVoteAccounts
@@ -4479,12 +6345,23 @@ paths:
                           format: int64
                           description: Number of slots behind the cluster a validator must be to be considered delinquent. Default 128.
                           example: 128
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getVoteAccounts
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getVoteAccounts
+                  params:
+                  - commitment: finalized
+              single_validator:
+                summary: Filter to a single validator's vote account.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getVoteAccounts
+                  params:
+                  - votePubkey: FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
       responses:
         '200':
           description: Successful `getVoteAccounts` response.
@@ -4528,6 +6405,43 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getVoteAccounts","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_vote_accounts()
+          print(f"current={len(resp.current)} delinquent={len(resp.delinquent)}")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const va = await connection.getVoteAccounts();
+          console.log(`current=${va.current.length} delinquent=${va.delinquent.length}`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let va = client.get_vote_accounts()?;
+          println!("current={} delinquent={}", va.current.len(), va.delinquent.len());
   /getInflationGovernor:
     post:
       operationId: getInflationGovernor
@@ -4587,12 +6501,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getInflationGovernor
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getInflationGovernor
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getInflationGovernor` response.
@@ -4632,6 +6549,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getInflationGovernor","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_inflation_governor().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getInflationGovernor());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{:?}", client.get_inflation_governor()?);
   /getInflationRate:
     post:
       operationId: getInflationRate
@@ -4673,11 +6624,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getInflationRate
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getInflationRate
+                  params: []
       responses:
         '200':
           description: Successful `getInflationRate` response.
@@ -4715,6 +6669,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getInflationRate","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_inflation_rate().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log(await connection.getInflationRate());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{:?}", client.get_inflation_rate()?);
   /getInflationReward:
     post:
       operationId: getInflationReward
@@ -4787,13 +6775,24 @@ paths:
                           format: int64
                           description: Specific epoch to query. Omit to use the latest finalized epoch.
                           example: 964
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getInflationReward
-              params:
-              - - FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
-              - epoch: 964
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getInflationReward
+                  params:
+                  - - FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
+                  - epoch: 964
+              without_epoch:
+                summary: Omit the epoch to get the most recent finalized epoch's rewards.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getInflationReward
+                  params:
+                  - - FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR
       responses:
         '200':
           description: Successful `getInflationReward` response.
@@ -4843,6 +6842,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getInflationReward","params":[["FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"],{"epoch":964}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          addrs = [Pubkey.from_string("FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR")]
+          resp = client.get_inflation_reward(addrs, epoch=964)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const addrs = [new PublicKey("FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR")];
+          const rewards = await connection.getInflationReward(addrs, 964);
+          console.log(rewards);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let addrs = [Pubkey::from_str("FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR")?];
+          let rewards = client.get_inflation_reward(&addrs, Some(964))?;
+          println!("{:?}", rewards);
   /getSupply:
     post:
       operationId: getSupply
@@ -4906,12 +6945,24 @@ paths:
                           type: boolean
                           description: If true, omit the (potentially long) `nonCirculatingAccounts` list from the response. Default false.
                           example: true
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSupply
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSupply
+                  params:
+                  - commitment: finalized
+              exclude_account_list:
+                summary: Skip the (potentially long) list of non-circulating accounts in the response.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSupply
+                  params:
+                  - commitment: finalized
+                    excludeNonCirculatingAccountsList: true
       responses:
         '200':
           description: Successful `getSupply` response.
@@ -4965,6 +7016,40 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSupply","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_supply().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          console.log((await connection.getSupply()).value);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{:?}", client.supply()?.value);
   /getLargestAccounts:
     post:
       operationId: getLargestAccounts
@@ -5031,12 +7116,23 @@ paths:
                           enum:
                           - circulating
                           - nonCirculating
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getLargestAccounts
-              params:
-              - filter: circulating
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getLargestAccounts
+                  params:
+                  - filter: circulating
+              non_circulating:
+                summary: Return only the largest non-circulating accounts.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getLargestAccounts
+                  params:
+                  - filter: nonCirculating
       responses:
         '200':
           description: Successful `getLargestAccounts` response.
@@ -5082,6 +7178,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getLargestAccounts","params":[{"filter":"circulating"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_largest_accounts().value[:5])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const largest = await connection.getLargestAccounts({ filter: "circulating" });
+          console.log(largest.value.slice(0, 5));
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let resp = client.get_largest_accounts_with_config(
+              solana_client::rpc_config::RpcLargestAccountsConfig { commitment: None, filter: None }
+          )?;
+          for entry in resp.value.iter().take(5) {
+              println!("{}: {}", entry.address, entry.lamports);
+          }
   /requestAirdrop:
     post:
       operationId: requestAirdrop
@@ -5151,14 +7287,17 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: requestAirdrop
-              params:
-              - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-              - 1000000000
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: requestAirdrop
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - 1000000000
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `requestAirdrop` response.
@@ -5183,6 +7322,51 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"requestAirdrop","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",1000000000,{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          from solana.rpc.api import Client
+          # Airdrops only succeed on devnet/testnet:
+          devnet = Client("https://api.devnet.solana.com")
+          pubkey = Pubkey.from_string("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri")
+          resp = devnet.request_airdrop(pubkey, 1_000_000_000)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const devnet = new Connection("https://api.devnet.solana.com");
+          const pubkey = new PublicKey("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri");
+          const sig = await devnet.requestAirdrop(pubkey, 1_000_000_000);
+          console.log(sig);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let devnet = RpcClient::new("https://api.devnet.solana.com".to_string());
+          let pubkey = Pubkey::from_str("83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri")?;
+          let sig = devnet.request_airdrop(&pubkey, 1_000_000_000)?;
+          println!("{}", sig);
   /minimumLedgerSlot:
     post:
       operationId: minimumLedgerSlot
@@ -5224,11 +7408,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: minimumLedgerSlot
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: minimumLedgerSlot
+                  params: []
       responses:
         '200':
           description: Successful `minimumLedgerSlot` response.
@@ -5253,6 +7440,45 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"minimumLedgerSlot","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          print(client.get_minimum_ledger_slot().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          // Not exposed by web3.js — use the raw RPC fallback shown in the cURL tab.
+          const r = await fetch("https://public.rpc.solanavibestation.com", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "minimumLedgerSlot", params: [] }),
+          });
+          console.log((await r.json()).result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          println!("{}", client.minimum_ledger_slot()?);
   /getRecentPerformanceSamples:
     post:
       operationId: getRecentPerformanceSamples
@@ -5305,12 +7531,15 @@ paths:
                       type: integer
                       format: int64
                       example: 5
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getRecentPerformanceSamples
-              params:
-              - 5
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getRecentPerformanceSamples
+                  params:
+                  - 5
       responses:
         '200':
           description: Successful `getRecentPerformanceSamples` response.
@@ -5367,6 +7596,44 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getRecentPerformanceSamples","params":[5]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          client = Client("https://public.rpc.solanavibestation.com")
+
+          resp = client.get_recent_performance_samples(limit=5)
+          for s in resp.value:
+              print(s)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          const connection = new Connection("https://public.rpc.solanavibestation.com", "confirmed");
+
+          const samples = await connection.getRecentPerformanceSamples(5);
+          for (const s of samples) console.log(s);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com".to_string());
+
+          let samples = client.get_recent_performance_samples(Some(5))?;
+          for s in &samples { println!("{:?}", s); }
 components:
   schemas:
     JsonRpcEnvelope:

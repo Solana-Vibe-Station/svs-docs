@@ -108,14 +108,38 @@ paths:
                         maxSupportedTransactionVersion:
                           type: integer
                           format: int64
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlock
-              params:
-              - 178000000
-              - maxSupportedTransactionVersion: 0
-                transactionDetails: full
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                  - 178000000
+                  - maxSupportedTransactionVersion: 0
+                    transactionDetails: full
+              signatures_only:
+                summary: Fetch a block but only return signatures, not full transactions. Much smaller payload.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                  - 416997240
+                  - transactionDetails: signatures
+                    rewards: false
+                    maxSupportedTransactionVersion: 0
+              with_rewards:
+                summary: Include block-level rewards (stake/voting payouts) in the response.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlock
+                  params:
+                  - 416997240
+                  - rewards: true
+                    maxSupportedTransactionVersion: 0
       responses:
         '200':
           description: Successful `getBlock` response.
@@ -172,6 +196,50 @@ paths:
       - {}
       - AuthHeader: []
       - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlock","params":[178000000,{"maxSupportedTransactionVersion":0,"transactionDetails":"full"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          resp = client.get_block(slot=416997240, max_supported_transaction_version=0)
+          print(f"blockhash={resp.value.blockhash} txs={len(resp.value.transactions or [])}")
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          const block = await connection.getBlock(416997240, { maxSupportedTransactionVersion: 0 });
+          console.log(`blockhash=${block.blockhash} txs=${block.transactions.length}`);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          use solana_transaction_status::UiTransactionEncoding;
+          let block = client.get_block_with_encoding(416997240, UiTransactionEncoding::Json)?;
+          println!("blockhash={} txs={}", block.blockhash, block.transactions.len());
   /historical/getBlocks:
     post:
       operationId: getBlocks
@@ -241,13 +309,24 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlocks
-              params:
-              - 178000000
-              - 178000010
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlocks
+                  params:
+                  - 178000000
+                  - 178000010
+              open_ended:
+                summary: Pass only `startSlot`; the node returns up to ~500k subsequent confirmed blocks.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlocks
+                  params:
+                  - 416997230
       responses:
         '200':
           description: Successful `getBlocks` response.
@@ -279,6 +358,49 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlocks","params":[178000000,178000010]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          resp = client.get_blocks(start_slot=416997230, end_slot=416997240)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          const blocks = await connection.getBlocks(416997230, 416997240);
+          console.log(blocks);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          let blocks = client.get_blocks(416997230, Some(416997240))?;
+          println!("{:?}", blocks);
   /historical/getBlocksWithLimit:
     post:
       operationId: getBlocksWithLimit
@@ -348,13 +470,16 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlocksWithLimit
-              params:
-              - 178000000
-              - 10
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlocksWithLimit
+                  params:
+                  - 178000000
+                  - 10
       responses:
         '200':
           description: Successful `getBlocksWithLimit` response.
@@ -391,6 +516,54 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlocksWithLimit","params":[178000000,10]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          # solana-py doesn't expose this directly; use the raw transport.
+          import requests
+          r = requests.post("https://public.rpc.solanavibestation.com", json={
+              "jsonrpc": "2.0", "id": 1, "method": "getBlocksWithLimit",
+              "params": [416997230, 10]
+          }).json()
+          print(r["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          const blocks = await connection.getBlocksWithLimit(416997230, 10);
+          console.log(blocks);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          let blocks = client.get_blocks_with_limit(416997230, 10)?;
+          println!("{:?}", blocks);
   /historical/getBlockTime:
     post:
       operationId: getBlockTime
@@ -443,12 +616,15 @@ paths:
                       type: integer
                       format: int64
                       example: 178000000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getBlockTime
-              params:
-              - 178000000
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getBlockTime
+                  params:
+                  - 178000000
       responses:
         '200':
           description: Successful `getBlockTime` response.
@@ -474,6 +650,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getBlockTime","params":[178000000]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          print(client.get_block_time(416997240).value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          console.log(await connection.getBlockTime(416997240));
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          println!("{}", client.get_block_time(416997240)?);
   /historical/getFirstAvailableBlock:
     post:
       operationId: getFirstAvailableBlock
@@ -515,11 +731,14 @@ paths:
                   type: array
                   description: No parameters.
                   maxItems: 0
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getFirstAvailableBlock
-              params: []
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getFirstAvailableBlock
+                  params: []
       responses:
         '200':
           description: Successful `getFirstAvailableBlock` response.
@@ -544,6 +763,51 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getFirstAvailableBlock","params":[]}'
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.post("https://public.rpc.solanavibestation.com/historical", json={
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getFirstAvailableBlock",
+              "params": []
+          }).json()
+          print(resp["result"])
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const resp = await fetch("https://public.rpc.solanavibestation.com/historical", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1,
+              method: "getFirstAvailableBlock",
+              params: []
+            }),
+          });
+          const data = await resp.json();
+          console.log(data.result);
+      - lang: rust
+        label: Rust
+        source: |-
+          use serde_json::json;
+
+          let body = json!({
+              "jsonrpc": "2.0", "id": 1,
+              "method": "getFirstAvailableBlock",
+              "params": []
+          }});
+          let resp: serde_json::Value = reqwest::blocking::Client::new()
+              .post("https://public.rpc.solanavibestation.com/historical").json(&body).send()?.json()?;
+          println!("{}", resp["result"]);
   /historical/getSlot:
     post:
       operationId: getSlot
@@ -603,12 +867,15 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSlot
-              params:
-              - commitment: finalized
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSlot
+                  params:
+                  - commitment: finalized
       responses:
         '200':
           description: Successful `getSlot` response.
@@ -633,6 +900,46 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment":"finalized"}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          print(client.get_slot().value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          console.log(await connection.getSlot());
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          println!("{}", client.get_slot()?);
   /historical/getSignaturesForAddress:
     post:
       operationId: getSignaturesForAddress
@@ -712,13 +1019,26 @@ paths:
                           type: string
                           description: Search until this signature (inclusive).
                           example: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSignaturesForAddress
-              params:
-              - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
-              - limit: 10
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignaturesForAddress
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - limit: 10
+              page_back:
+                summary: Paginate backwards by passing the last signature you've seen as `before`.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignaturesForAddress
+                  params:
+                  - 83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri
+                  - limit: 1000
+                    before: 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
       responses:
         '200':
           description: Successful `getSignaturesForAddress` response.
@@ -771,6 +1091,55 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSignaturesForAddress","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",{"limit":10}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          address = Pubkey.from_string("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")
+          resp = client.get_signatures_for_address(address, limit=10)
+          for sig in resp.value:
+              print(sig.signature, sig.slot)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          const address = new PublicKey("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq");
+          const sigs = await connection.getSignaturesForAddress(address, { limit: 10 });
+          for (const s of sigs) console.log(s.signature, s.slot);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          use solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config;
+          let address = Pubkey::from_str("TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq")?;
+          let cfg = GetConfirmedSignaturesForAddress2Config { limit: Some(10), ..Default::default() };
+          let sigs = client.get_signatures_for_address_with_config(&address, cfg)?;
+          for s in &sigs { println!("{} {}", s.signature, s.slot); }
   /historical/getSignatureStatuses:
     post:
       operationId: getSignatureStatuses
@@ -840,13 +1209,25 @@ paths:
                           description: If true, look up signatures in the long-term ledger archive (always true for the historical RPC).
                           example: true
                           default: true
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getSignatureStatuses
-              params:
-              - - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-              - searchTransactionHistory: true
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignatureStatuses
+                  params:
+                  - - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - searchTransactionHistory: true
+              with_history:
+                summary: Search the long-term ledger archive in addition to recent slots.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getSignatureStatuses
+                  params:
+                  - - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - searchTransactionHistory: true
       responses:
         '200':
           description: Successful `getSignatureStatuses` response.
@@ -906,6 +1287,54 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getSignatureStatuses","params":[["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"],{"searchTransactionHistory":true}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          from solders.signature import Signature
+          sigs = [Signature.from_string("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")]
+          resp = client.get_signature_statuses(sigs, search_transaction_history=True)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          const sigs = ["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"];
+          const statuses = await connection.getSignatureStatuses(sigs, { searchTransactionHistory: true });
+          console.log(statuses.value);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          use solana_sdk::signature::Signature;
+          let sigs = [Signature::from_str("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")?];
+          let statuses = client.get_signature_statuses_with_history(&sigs)?;
+          println!("{:?}", statuses.value);
   /historical/getTransaction:
     post:
       operationId: getTransaction
@@ -973,13 +1402,16 @@ paths:
                         maxSupportedTransactionVersion:
                           type: integer
                           format: int64
-            example:
-              jsonrpc: '2.0'
-              id: 1
-              method: getTransaction
-              params:
-              - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
-              - maxSupportedTransactionVersion: 0
+            examples:
+              default:
+                summary: Standard request — required params only.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTransaction
+                  params:
+                  - 4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa
+                  - maxSupportedTransactionVersion: 0
       responses:
         '200':
           description: Successful `getTransaction` response.
@@ -1038,6 +1470,55 @@ paths:
         '429': *id003
         '500': *id004
       security: *id005
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X POST https://public.rpc.solanavibestation.com/historical \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"getTransaction","params":["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa",{"maxSupportedTransactionVersion":0}]}'
+      - lang: python
+        label: Python
+        source: |-
+          from solana.rpc.api import Client
+          from solders.pubkey import Pubkey
+
+          # The historical archive is served from a separate path on every SVS
+          # server. The solana-py Client must be pointed at the /historical URL:
+          client = Client("https://public.rpc.solanavibestation.com/historical")
+
+          from solders.signature import Signature
+          sig = Signature.from_string("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")
+          resp = client.get_transaction(sig, max_supported_transaction_version=0)
+          print(resp.value)
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          import { Connection, PublicKey } from "@solana/web3.js";
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Construct a Connection pointed at the /historical URL:
+          const connection = new Connection("https://public.rpc.solanavibestation.com/historical", "confirmed");
+
+          const sig = "4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa";
+          const tx = await connection.getTransaction(sig, { maxSupportedTransactionVersion: 0 });
+          console.log(tx);
+      - lang: rust
+        label: Rust
+        source: |-
+          use solana_client::rpc_client::RpcClient;
+          use solana_sdk::pubkey::Pubkey;
+          use std::str::FromStr;
+
+          // The historical archive is served from a separate path on every SVS
+          // server. Build the RpcClient with the /historical URL:
+          let client = RpcClient::new("https://public.rpc.solanavibestation.com/historical".to_string());
+
+          use solana_sdk::signature::Signature;
+          use solana_transaction_status::UiTransactionEncoding;
+          let sig = Signature::from_str("4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa")?;
+          let tx = client.get_transaction(&sig, UiTransactionEncoding::Json)?;
+          println!("{:?}", tx);
 components:
   schemas:
     JsonRpcEnvelope:
