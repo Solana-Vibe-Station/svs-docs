@@ -1512,6 +1512,155 @@ add_historical(
 
 
 
+
+add_historical(
+    name="getTransactionsForAddress", tag="Transactions",
+    summary="Filtered transaction history for an address",
+    description=(
+        "Enhanced transaction history API with powerful filtering, sorting, and "
+        "pagination capabilities for retrieving comprehensive transaction data for "
+        "any address. Supports bidirectional sorting, time/slot/status filtering, "
+        "and efficient keyset pagination via the `paginationToken` cursor.\n\n"
+        "**Note:** SVS supports the same parameter shape as the upstream provider "
+        "with one exception — the `filters.tokenAccounts` field is **not supported** "
+        "on Solana Vibe Station. All other filters (`slot`, `blockTime`, `signature`, "
+        "`status`) work as documented."
+    ),
+    params=[
+        {
+            "name": "address",
+            "schema_doc": "Solana account address whose transaction history to retrieve. May be a wallet, token mint, program, NFT, etc.",
+            "schema": s_string(
+                desc="Solana account address, base-58.",
+                example="Vote111111111111111111111111111111111111111",
+            ),
+            "required": True,
+        },
+        {
+            "name": "config",
+            "schema_doc": "Optional configuration controlling sort order, pagination, transaction detail level, and filters.",
+            "required": False,
+            "schema": s_obj(
+                desc="Optional configuration object for filtering, sorting, and pagination.",
+                properties=OrderedDict([
+                    ("transactionDetails", s_string(
+                        desc="Level of transaction detail to return.",
+                        enum=["signatures", "full"],
+                        default="signatures",
+                        example="signatures",
+                    )),
+                    ("sortOrder", s_string(
+                        desc="Result ordering by slot. `desc` returns newest first.",
+                        enum=["desc", "asc"],
+                        default="desc",
+                        example="desc",
+                    )),
+                    ("commitment", s_ref("#/components/schemas/Commitment")),
+                    ("limit", s_int(
+                        desc="Max records to return. 1-1000 when transactionDetails is `signatures`; 1-100 when `full`.",
+                        example=10,
+                        minimum=1,
+                        maximum=1000,
+                    )),
+                    ("paginationToken", s_string(
+                        desc="Keyset pagination cursor in `slot:position` format. Pass the value returned in the previous response's `paginationToken` to fetch the next page.",
+                        example="1055:5",
+                    )),
+                    ("encoding", s_ref("#/components/schemas/Encoding")),
+                    ("maxSupportedTransactionVersion", s_int(
+                        desc="Highest transaction version the client can handle. Only meaningful when `transactionDetails` is `full`. Set to 0 to include versioned transactions.",
+                        example=0,
+                    )),
+                    ("filters", s_obj(
+                        desc=(
+                            "Optional set of filters narrowing the result set. Filters intersect "
+                            "(AND-combined). **NOTE:** `filters.tokenAccounts` is NOT supported on "
+                            "SVS — it is silently ignored or rejected. All other filters below are "
+                            "fully supported."
+                        ),
+                        properties=OrderedDict([
+                            ("slot", s_obj(
+                                desc="Slot range filter. Combine fields for half-open or closed ranges.",
+                                properties=OrderedDict([
+                                    ("gte", s_int(desc="Match slots >= this value.", example=400000000)),
+                                    ("gt",  s_int(desc="Match slots > this value.")),
+                                    ("lte", s_int(desc="Match slots <= this value.")),
+                                    ("lt",  s_int(desc="Match slots < this value.")),
+                                ]),
+                            )),
+                            ("blockTime", s_obj(
+                                desc="Unix-time (seconds) range filter on block production time.",
+                                properties=OrderedDict([
+                                    ("gte", s_int(desc="Match block times >= this Unix timestamp.", example=1700000000)),
+                                    ("gt",  s_int(desc="Match block times > this Unix timestamp.")),
+                                    ("lte", s_int(desc="Match block times <= this Unix timestamp.")),
+                                    ("lt",  s_int(desc="Match block times < this Unix timestamp.")),
+                                    ("eq",  s_int(desc="Match block times exactly equal to this Unix timestamp.")),
+                                ]),
+                            )),
+                            ("signature", s_obj(
+                                desc="Signature range filter (lexicographic ordering of base-58 strings).",
+                                properties=OrderedDict([
+                                    ("gte", s_string(desc="Match signatures >= this value (lex order).")),
+                                    ("gt",  s_string(desc="Match signatures > this value (lex order).")),
+                                    ("lte", s_string(desc="Match signatures <= this value (lex order).")),
+                                    ("lt",  s_string(desc="Match signatures < this value (lex order).")),
+                                ]),
+                            )),
+                            ("status", s_string(
+                                desc="Restrict to successful or failed transactions only.",
+                                enum=["success", "failed"],
+                                example="success",
+                            )),
+                        ]),
+                    )),
+                ]),
+            ),
+        },
+    ],
+    params_example=["Vote111111111111111111111111111111111111111", {"transactionDetails": "signatures", "limit": 10}],
+    result_schema=s_obj(
+        required=["data"],
+        properties=[
+            ("data", s_arr(
+                s_obj(
+                    required=["signature", "slot", "transactionIndex", "err", "blockTime", "confirmationStatus"],
+                    properties=[
+                        ("signature", s_string(desc="Transaction signature, base-58.", example="5h6xBEauJ3PK6SWCZ1PGjBvj8vDdWG3KpwATGy1ARAXFSDwt8GFXM7W5Ncn16wmqokgpiKRLuS83KUxyZyv2sUYv")),
+                        ("slot", s_int(desc="Slot in which the transaction was confirmed.", example=1054)),
+                        ("transactionIndex", s_int(desc="Position of the transaction within its block.", example=42)),
+                        ("err", s_obj(nullable=True, additionalProperties=True, desc="Error object if the transaction failed; null if it succeeded.")),
+                        ("memo", s_string(nullable=True, desc="Memo attached to the transaction, if any.")),
+                        ("blockTime", s_int(nullable=True, desc="Estimated production time of the block, in Unix seconds.", example=1641038400)),
+                        ("confirmationStatus", s_string(
+                            desc="Cluster commitment level when the transaction was confirmed.",
+                            enum=["processed", "confirmed", "finalized"],
+                            example="finalized",
+                        )),
+                    ],
+                ),
+                desc="Transaction history records, ordered per `sortOrder`.",
+            )),
+            ("paginationToken", s_string(
+                desc="Cursor for the next page in `slot:position` format, or null/missing when there are no more results.",
+                example="1055:5",
+            )),
+        ],
+    ),
+    result_example={
+        "data": [{
+            "signature": "5h6xBEauJ3PK6SWCZ1PGjBvj8vDdWG3KpwATGy1ARAXFSDwt8GFXM7W5Ncn16wmqokgpiKRLuS83KUxyZyv2sUYv",
+            "slot": 1054,
+            "transactionIndex": 42,
+            "err": None,
+            "memo": None,
+            "blockTime": 1641038400,
+            "confirmationStatus": "finalized",
+        }],
+        "paginationToken": "1055:5",
+    },
+)
+
 # ---------------------------------------------------------------------------
 # WEBSOCKET RPC method catalog.
 #
@@ -1789,6 +1938,158 @@ WEBSOCKET_TAGS = [
     {"name": "Vote Subscriptions",      "description": "Subscribe to gossip votes (currently unsupported on SVS)."},
 ]
 
+
+
+def build_historical_consolidated(methods):
+    """Build a single POST /historical operation that documents every
+    historical RPC method via a multi-example request body and a generic
+    JSON-RPC response envelope.
+
+    OpenAPI 3.0 requires each (path, verb) pair to be unique, so we can't
+    have N separate operations all at POST /historical. The historical
+    archive lives at exactly that path on every SVS server, with the
+    method passed in the JSON-RPC body. To document every method while
+    honoring that constraint, we emit ONE operation and use the
+    `examples:` map (which GitBook renders as a Test-It dropdown) to
+    show the request body for each method. Per-method response examples
+    are listed in the description as a method-by-method reference.
+    """
+    method_names = [m["name"] for m in methods]
+
+    request_schema = _OD([
+        ("type", "object"),
+        ("required", ["jsonrpc", "id", "method", "params"]),
+        ("properties", _OD([
+            ("jsonrpc", _OD([
+                ("type", "string"), ("enum", ["2.0"]),
+                ("description", "JSON-RPC protocol version."), ("example", "2.0"),
+            ])),
+            ("id", _OD([
+                ("oneOf", [_OD([("type", "string")]), _OD([("type", "integer")])]),
+                ("description", "Request identifier echoed back in the response."),
+                ("example", 1),
+            ])),
+            ("method", _OD([
+                ("type", "string"),
+                ("enum", method_names),
+                ("description", "The historical RPC method to call. Each value below corresponds to a documented method; pick the one matching your request body."),
+                ("example", method_names[0] if method_names else "getBlock"),
+            ])),
+            ("params", _OD([
+                ("type", "array"),
+                ("description", "Positional parameters for the chosen method. The shape varies per method; see the Test-It examples below for one-click presets."),
+            ])),
+        ])),
+    ])
+
+    # Build the named-examples map.
+    examples = _OD()
+    for m in methods:
+        name = m["name"]
+        examples[name] = _OD([
+            ("summary", f"{name} — {m['summary']}"),
+            ("value", _OD([
+                ("jsonrpc", "2.0"),
+                ("id", 1),
+                ("method", name),
+                ("params", m["params_example"]),
+            ])),
+        ])
+
+    # Build a markdown method index for the description.
+    method_index = ["", "## Methods supported", ""]
+    for m in methods:
+        first_line = m["description"].split("\n", 1)[0].strip()
+        method_index.append(f"- **`{m['name']}`** — {first_line}")
+    method_index.append("")
+
+    description = (
+        "All historical methods POST to **`/historical`** on the chosen SVS server. "
+        "The method name is passed in the JSON-RPC request body, exactly like the main "
+        "Solana RPC. Use the Test-It dropdown to pick a method; each named example "
+        "below populates the request body for that method.\n"
+        + "\n".join(method_index)
+    )
+
+    # Generic JSON-RPC response envelope. The shape of `result` varies per
+    # method (and is documented in each per-method's full description above).
+    response_schema = _OD([
+        ("allOf", [
+            _OD([("$ref", "#/components/schemas/JsonRpcEnvelope")]),
+            _OD([
+                ("type", "object"),
+                ("required", ["result"]),
+                ("properties", _OD([
+                    ("result", _OD([
+                        ("description", "Method-specific result. See each method's documentation for the shape."),
+                        ("oneOf", [
+                            _OD([("type", "object"), ("additionalProperties", True)]),
+                            _OD([("type", "array"), ("items", _OD([("type", "object"), ("additionalProperties", True)]))]),
+                            _OD([("type", "integer")]),
+                            _OD([("type", "string")]),
+                            _OD([("type", "boolean")]),
+                        ]),
+                    ])),
+                ])),
+            ]),
+        ]),
+    ])
+
+    response_examples = _OD()
+    for m in methods:
+        response_examples[m["name"]] = _OD([
+            ("summary", f"Successful {m['name']} response"),
+            ("value", _OD([
+                ("jsonrpc", "2.0"),
+                ("id", 1),
+                ("result", m["result_example"]),
+            ])),
+        ])
+
+    # Code samples: derive from the FIRST method's params_example so the
+    # tabbed code samples have a runnable cURL/Python/JS/Rust against
+    # /historical. The generic `historical_code_samples_for` already
+    # POSTs to /historical correctly.
+    first = methods[0]
+    x_samples = code_samples.historical_code_samples_for(first["name"], first["params_example"])
+
+    op = _OD([
+        ("operationId", "historicalRpc"),
+        ("summary", "Historical Solana JSON-RPC"),
+        ("tags", ["Historical RPC"]),
+        ("description", description),
+        ("requestBody", _OD([
+            ("required", True),
+            ("content", _OD([
+                ("application/json", _OD([
+                    ("schema", request_schema),
+                    ("examples", examples),
+                ])),
+            ])),
+        ])),
+        ("responses", _OD([
+            ("200", _OD([
+                ("description", "Successful JSON-RPC response. Result shape depends on the method."),
+                ("content", _OD([
+                    ("application/json", _OD([
+                        ("schema", response_schema),
+                        ("examples", response_examples),
+                    ])),
+                ])),
+            ])),
+        ])),
+        ("security", SECURITY),
+        ("x-codeSamples", [
+            _OD([("lang", s["lang"]), ("label", s["label"]), ("source", s["source"])])
+            for s in x_samples
+        ]),
+    ])
+    for code, body in STANDARD_RESPONSES.items():
+        op["responses"][code] = body
+
+    return _OD([("/historical", _OD([("post", op)]))])
+
+
 # ---------------------------------------------------------------------------
 # Spec assembly + emit.
 # ---------------------------------------------------------------------------
@@ -1806,11 +2107,11 @@ SOLANA_SERVERS = [
 ]
 
 HISTORICAL_SERVERS = [
-    {"url": "https://public.rpc.solanavibestation.com/historical",  "description": "Public endpoint (rate-limited, no auth)"},
-    {"url": "https://basic.rpc.solanavibestation.com/historical",   "description": "Basic tier"},
-    {"url": "https://ultra.rpc.solanavibestation.com/historical",   "description": "Ultra tier"},
-    {"url": "https://elite.rpc.solanavibestation.com/historical",   "description": "Elite tier"},
-    {"url": "https://epic.rpc.solanavibestation.com/historical",    "description": "Epic tier"},
+    {"url": "https://public.rpc.solanavibestation.com",  "description": "Public endpoint (rate-limited, no auth)"},
+    {"url": "https://basic.rpc.solanavibestation.com",   "description": "Basic tier"},
+    {"url": "https://ultra.rpc.solanavibestation.com",   "description": "Ultra tier"},
+    {"url": "https://elite.rpc.solanavibestation.com",   "description": "Elite tier"},
+    {"url": "https://epic.rpc.solanavibestation.com",    "description": "Epic tier"},
 ]
 
 SOLANA_TAGS = [
@@ -1854,11 +2155,11 @@ def assemble_spec(*, title, description, version, servers, tags, paths):
 
 def main(out_dir):
     solana_paths = build_paths(SOLANA_METHODS, base_path_prefix="", base_note=ENDPOINT_NOTE)
-    # Historical paths drop the /historical prefix — that lives in the server
-    # URL now so the rendered path is just the method name (matches the
-    # solana-rpc convention). Real production POSTs to /historical with the
-    # method passed in the JSON-RPC body, exactly like the main RPC.
-    historical_paths = build_paths(HISTORICAL_METHODS, base_path_prefix="", base_note=HISTORICAL_ENDPOINT_NOTE, historical=True)
+    # Historical methods all live at the single path /historical on the
+    # SVS server. OpenAPI requires unique (path, verb) keys, so we emit
+    # ONE consolidated operation and discriminate methods via the
+    # request-body examples dropdown.
+    historical_paths = build_historical_consolidated(HISTORICAL_METHODS)
 
     solana_spec = assemble_spec(
         title="Solana Vibe Station RPC",
@@ -1876,19 +2177,17 @@ def main(out_dir):
     historical_spec = assemble_spec(
         title="Solana Vibe Station Historical RPC",
         description=textwrap.dedent("""\
-            Historical Solana JSON-RPC 2.0 endpoints hosted by Solana Vibe Station,
+            Historical Solana JSON-RPC 2.0 methods hosted by Solana Vibe Station,
             served from long-term ledger storage.
 
-            The historical archive lives at the `/historical` path of every SVS
-            server, which is baked into each `servers[]` entry below. The
-            actual production URL is therefore
-            `https://<tier>.rpc.solanavibestation.com/historical` — every
-            request POSTs to that URL with the method name in the JSON-RPC
-            request body, exactly like the main RPC. The per-method paths
-            shown in the operations list (e.g. `/getBlock`) are documentation
-            groupings so GitBook can render each method as its own page.
+            All historical methods POST to a single path: **`/historical`**
+            on the chosen SVS server. The method name is passed in the
+            JSON-RPC request body, exactly like the main Solana RPC. Use
+            the Test-It dropdown to switch between method-specific example
+            request bodies; the response payload also has a per-method
+            example so you can see what to expect.
         """),
-        version="1.0.0", servers=HISTORICAL_SERVERS, tags=HISTORICAL_TAGS, paths=historical_paths,
+        version="1.0.0", servers=HISTORICAL_SERVERS, tags=[{"name": "Historical RPC", "description": "All historical methods, dispatched via the JSON-RPC `method` field."}], paths=historical_paths,
     )
 
     with open(f"{out_dir}/solana-rpc.yaml", "w") as f:
