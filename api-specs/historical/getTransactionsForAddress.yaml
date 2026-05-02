@@ -34,7 +34,6 @@ paths:
       description: |
         Enhanced transaction history API with powerful filtering, sorting, and pagination capabilities for retrieving comprehensive transaction data for any address. Supports bidirectional sorting, time/slot/status filtering, and efficient keyset pagination via the `paginationToken` cursor.
 
-        **Note:** SVS supports the same parameter shape as the upstream provider with one exception — the `filters.tokenAccounts` field is **not supported** on Solana Vibe Station. All other filters (`slot`, `blockTime`, `signature`, `status`) work as documented.
         **Parameters**
 
         0. `address` (required) — Solana account address whose transaction history to retrieve. May be a wallet, token mint, program, NFT, etc.
