@@ -94,4 +94,7 @@ jobs:
           echo "| SVS API (REST) | $(ls api-specs/svs-api.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
           echo "| Solana RPC (HTTP) | $(ls api-specs/solana-rpc/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
           echo "| Historical RPC | $(ls api-specs/historical/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
-          echo "| WebSocket RPC | $(ls api-specs/websocket-rpc/*.yaml 2>/
+          echo "| WebSocket RPC | $(ls api-specs/websocket-rpc/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lightspeed | $(ls api-specs/lightspeed/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Jito | $(ls api-specs/jito/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rewind | $(ls api-specs/rewind/*.yaml 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY

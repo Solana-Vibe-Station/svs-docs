@@ -502,3 +502,9 @@ components:
       name: api_key
       description: Pass `?api_key=<api-key>` on the URL.
 security: *id001
+1
+_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001
+ey>` on the URL.
+security: *id001
