@@ -654,4 +654,7 @@ security:
 tags:
   - name: Status
     description: API health and status endpoints
-  - name: Token I
+  - name: Token Information
+    description: Endpoints for retrieving token metadata and comprehensive mint information
+  - name: Token Pricing
+    description: Endpoints for retrieving token pricing data at multiple timeframes

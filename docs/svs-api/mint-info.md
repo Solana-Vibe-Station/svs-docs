@@ -397,4 +397,8 @@ Each request counts as 1 API call regardless of the number of mints (up to 36).
 
 ## API Specification
 
-For complete OpenAPI documentation, see `/api-specs/svs-api.yam
+For complete OpenAPI documentation, see `/api-specs/svs-api.yaml`.
+
+## Need Help?
+
+For questions about mint info data or analysis patterns, see [Support](../support.md).

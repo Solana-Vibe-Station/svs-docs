@@ -57,4 +57,4 @@ When evaluating performance for your workload, the metrics we recommend watching
 - **Uptime** — availability over rolling 30/90-day windows
 - **Geyser stream latency** — slot-arrival lag for subscription-based workloads
 
-Live values across all of these are posted to the metrics channel in our Discord every 
+Live values across all of these are posted to the metrics channel in our Discord every 5 minutes. If you have a specific benchmark request or want infrastructure detail beyond what's posted publicly, reach out via [Contact](../support/contact.md).
