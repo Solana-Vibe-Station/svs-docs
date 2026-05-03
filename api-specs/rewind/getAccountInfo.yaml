@@ -390,19 +390,20 @@ components:
       required:
       - signature
       description: |-
-        Per-tx positioning. `signature` is resolved through `transaction_positions` to its `(slot, first_wv, last_wv)` triple. `position` selects the boundary:
-        - `"before"` (default) — load at `(slot, first_wv − 1)`. State the named tx itself read.
-        - `"after"` — load at `(slot, last_wv)`. State immediately after the tx finished writing.
+        Per-transaction positioning. The named transaction is resolved against the archive index and used as the boundary. `position` selects which side of the transaction:
+        - `"before"` (default) — state the named tx itself read.
+        - `"after"` — state immediately after the named tx finished writing.
       properties:
         signature:
           type: string
-          description: Base58 transaction signature.
+          description: Base58 transaction signature. The slot is derived automatically from the archive — you don't need to know it.
         position:
           type: string
           enum:
           - before
           - after
           default: before
+          description: '`before` (default) loads state the named tx itself read; `after` loads state immediately after the named tx finished writing.'
     RewindContext:
       type: object
       required:

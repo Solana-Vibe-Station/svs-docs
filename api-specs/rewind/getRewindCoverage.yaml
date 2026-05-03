@@ -6,9 +6,9 @@ info:
 
     Leader-skipped slots (`status=skipped` internally) are intentionally **not** listed in `gaps` — those slots never produced a block on chain. Their count is reported separately in `skippedSlotCount`.
 
-    `filteredOwners` and `filteredPubkeys` list account classes whose post-S0 writes are deliberately not tracked — simulations touching those accounts return `-32017 FilteredAccountStale`.
+    `filteredOwners` and `filteredPubkeys` list account classes whose ongoing writes are deliberately not tracked — simulations touching those accounts return `-32017 FilteredAccountStale`.
 
-    Served from an in-process gap cache that incrementally tail-rescans on each call. For dashboards or status pages that only need the headline numbers, pass `includeGaps: false` for a constant-cost summary-only response.
+    For dashboards or status pages that only need the headline numbers, pass `includeGaps: false` for a constant-cost summary-only response.
   version: 1.0.0
   contact:
     name: Solana Vibe Station
@@ -213,7 +213,7 @@ paths:
                   - Vote111111111111111111111111111111111111111
                   - Stake11111111111111111111111111111111111111
                   filteredPubkeys: []
-                  note: gaps lists only archive misses (status=missing); leader-skipped slots are counted in skippedSlotCount but not listed as gaps. gapPercent excludes skipped slots from the denominator. filteredOwners/filteredPubkeys list account classes whose post-S0 writes are deliberately not tracked — simulations touching those accounts return -32017 FilteredAccountStale.
+                  note: gaps lists only archive misses (status=missing); leader-skipped slots are counted in skippedSlotCount but not listed as gaps. gapPercent excludes skipped slots from the denominator. filteredOwners/filteredPubkeys list account classes whose ongoing writes are deliberately not tracked — simulations touching those accounts return -32017 FilteredAccountStale.
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -318,7 +318,7 @@ components:
       required:
       - code
       - message
-      description: '`-32602` malformed params; `-32603` HBase failure during refresh (transient).'
+      description: '`-32602` malformed params; `-32603` internal error (transient — safe to retry).'
       properties:
         code:
           type: integer

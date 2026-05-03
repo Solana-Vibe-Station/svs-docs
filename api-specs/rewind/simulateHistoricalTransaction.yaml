@@ -6,14 +6,12 @@ info:
 
     Use cases: post-mortem analysis, debugging failed txs against the exact pre-state they saw, deterministic-replay validation, opportunity research at known historical moments.
 
-    **Position resolution.** Two positioning modes are supported:
+    **Positioning.** Two modes are supported:
 
-    1. **`anchor` set** — signature is looked up in the archive index and used as the boundary. `query_slot` and `load_slot` are derived from the signature; `position: "before"` loads state the named tx itself read, `position: "after"` loads state immediately after the named tx finished writing. `preStateSlot` is ignored.
-    2. **`slot` only** — `query_slot = slot`, `load_slot = preStateSlot ?? slot` (end-of-slot).
+    1. **`anchor` set** — the named transaction is resolved through the archive index and used as the boundary. `position: "before"` loads state the named tx itself read; `position: "after"` loads state immediately after the named tx finished writing.
+    2. **`slot` only** — end-of-slot at `slot`. Use `preStateSlot` to override where account state is loaded from (e.g. `slot - 1` for "as if this tx ran at slot start"); ALTs are always resolved at `slot`.
 
-    ALTs always resolve at `query_slot` regardless of which path was taken.
-
-    **Filter set.** Simulations that touch a filtered owner / pubkey are refused with `-32017 FilteredAccountStale`. See `getRewindCoverage.filteredOwners`.
+    **Filter set.** Simulations that touch a filtered owner or pubkey are refused with `-32017 FilteredAccountStale`. See `getRewindCoverage.filteredOwners`.
   version: 1.0.0
   contact:
     name: Solana Vibe Station
@@ -49,8 +47,6 @@ paths:
 
         0. `transaction` (required) — base64 (default) or base58 encoded transaction.
         1. `config` (required) — see fields below. `slot` is required unless `anchor` is provided.
-
-        Requires `[replay].live_rpc_endpoint` to be configured server-side. Without it returns `-32603` with a clear "simulator disabled" message.
       requestBody:
         required: true
         content:
@@ -139,7 +135,7 @@ paths:
                         tolerateGaps:
                           type: boolean
                           default: false
-                          description: When `false` (default), simulations whose resolved `load_slot` lands inside a known MISSING/UNKNOWN gap return `-32018 SlotInArchiveGap`.
+                          description: When `false` (default), simulations whose resolved load slot lands inside a known MISSING/UNKNOWN gap return `-32018 SlotInArchiveGap`.
             examples:
               end_of_slot:
                 summary: End-of-slot simulation.
@@ -365,12 +361,12 @@ components:
       - message
       description: |
         Method-specific codes:
-        - `-32014` `slot` past `latestSlot`.
-        - `-32015` `slot` older than `earliestSlot`.
-        - `-32016` `anchor.signature` not in `transaction_positions`.
+        - `-32014` `slot` past the archive's `latestSlot`.
+        - `-32015` `slot` older than the archive's `earliestSlot`.
+        - `-32016` `anchor.signature` not indexed in the archive.
         - `-32017` FilteredAccountStale — tx touches an account in the filter set.
-        - `-32018` SlotInArchiveGap — resolved `load_slot` inside a known MISSING/UNKNOWN gap.
-        - `-32603` Simulator disabled / live-RPC failure / ALT not in archive.
+        - `-32018` SlotInArchiveGap — resolved load slot inside a known MISSING/UNKNOWN gap.
+        - `-32603` Internal error. Treat as transient; safe to retry.
       properties:
         code:
           type: integer
@@ -386,7 +382,7 @@ components:
       properties:
         signature:
           type: string
-          description: Base58 transaction signature. Slot derived from `transaction_positions`.
+          description: Base58 transaction signature. The slot is derived automatically from the archive.
         position:
           type: string
           enum:
@@ -472,7 +468,7 @@ components:
           schema:
             $ref: '#/components/schemas/JsonRpcErrorResponse'
     InternalServerError:
-      description: Unexpected server error. Includes simulator-disabled / HBase / live-RPC failures.
+      description: Unexpected server error. Treat as transient; safe to retry.
       content:
         application/json:
           schema:

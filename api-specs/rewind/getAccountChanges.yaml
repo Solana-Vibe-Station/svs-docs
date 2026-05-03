@@ -437,7 +437,7 @@ components:
         txnSignature:
           type: string
           nullable: true
-          description: Base58 signature that produced the write, or `null` for system / sysvar updates and writes Yellowstone aggregates without per-tx attribution.
+          description: Base58 signature that produced the write, or `null` for system / sysvar updates and the small fraction of writes the upstream stream emits without per-tx attribution.
         dataChanged:
           type: boolean
           description: '`true` if this write actually mutated bytes vs. its predecessor; `false` if only metadata (lamports/owner/etc.) changed.'
@@ -504,5 +504,4 @@ components:
       type: apiKey
       in: query
       name: api_key
-      description: Pass `?api_key=<api-key>` on the URL.
-security: *id001
+      description: Pass `?api_key=<api-key>` on t
