@@ -34,7 +34,7 @@ tags:
 - name: Rewind
   description: Historical account state and per-write change history.
 paths:
-  /:
+  /rewind:
     post:
       operationId: getAccountInfo
       summary: getAccountInfo — Historical account lookup at a chosen slot or transaction
@@ -220,9 +220,20 @@ paths:
       - lang: shell
         label: cURL
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com \
+          curl -X POST https://public.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getAccountInfo","params":["SysvarC1ock11111111111111111111111111111111",{"slot":250000000,"encoding":"base64"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getAccountInfo",
+              "params": [
+                "SysvarC1ock11111111111111111111111111111111",
+                {
+                  "slot": 250000000,
+                  "encoding": "base64"
+                }
+              ]
+            }'
       - lang: javascript
         label: JavaScript
         source: |-
@@ -485,4 +496,5 @@ components:
       type: apiKey
       in: query
       name: api_key
-      description: Pass `?api_key=<api-key>` on th
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001

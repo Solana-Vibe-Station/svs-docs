@@ -29,7 +29,7 @@ tags:
 - name: Rewind
   description: Historical account state and per-write change history.
 paths:
-  /:
+  /rewind:
     post:
       operationId: getMultipleAccounts
       summary: getMultipleAccounts — Batched historical lookup at one shared boundary

@@ -31,7 +31,7 @@ tags:
 - name: Rewind
   description: Historical account state and per-write change history.
 paths:
-  /:
+  /rewind:
     post:
       operationId: getAccountDiff
       summary: getAccountDiff — Two-point diff for one account

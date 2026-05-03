@@ -31,7 +31,7 @@ tags:
 - name: Rewind
   description: Historical account state and per-write change history.
 paths:
-  /:
+  /rewind:
     post:
       operationId: getAccountChanges
       summary: getAccountChanges — Paginated per-write change history for one pubkey
