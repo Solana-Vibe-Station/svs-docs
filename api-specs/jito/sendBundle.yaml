@@ -158,7 +158,20 @@ paths:
         source: |-
           curl -X POST https://basic.swqos.solanavibestation.com/jito \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"sendBundle","params":[["<TX1_BASE64>","<TX2_BASE64>"],{"encoding":"base64"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "sendBundle",
+              "params": [
+                [
+                  "<TX1_BASE64>",
+                  "<TX2_BASE64>"
+                ],
+                {
+                  "encoding": "base64"
+                }
+              ]
+            }'
       - lang: typescript
         label: TypeScript
         source: |-

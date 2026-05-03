@@ -177,7 +177,17 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getBalance","params":["83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",{"commitment":"finalized"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getBalance",
+              "params": [
+                "83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri",
+                {
+                  "commitment": "finalized"
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

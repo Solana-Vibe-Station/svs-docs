@@ -153,7 +153,15 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com/historical \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getBlocksWithLimit","params":[178000000,10]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getBlocksWithLimit",
+              "params": [
+                178000000,
+                10
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

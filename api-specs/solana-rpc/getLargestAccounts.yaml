@@ -174,7 +174,16 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getLargestAccounts","params":[{"filter":"circulating"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getLargestAccounts",
+              "params": [
+                {
+                  "filter": "circulating"
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

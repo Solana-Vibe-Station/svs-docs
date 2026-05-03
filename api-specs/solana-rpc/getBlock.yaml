@@ -216,7 +216,18 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getBlock","params":[416997240,{"maxSupportedTransactionVersion":0,"transactionDetails":"full"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getBlock",
+              "params": [
+                416997240,
+                {
+                  "maxSupportedTransactionVersion": 0,
+                  "transactionDetails": "full"
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

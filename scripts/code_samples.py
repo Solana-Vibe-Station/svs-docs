@@ -828,16 +828,24 @@ RS_HEADER = (
 )
 
 
+def _curl_body(method: str, params: list[Any]) -> str:
+    """Render the JSON-RPC body as multi-line JSON inside a `-d \'...\'` argument."""
+    body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
+    pretty = json.dumps(body, indent=2, ensure_ascii=False)
+    pretty = pretty.replace("'", "'\\''")
+    lines = pretty.splitlines()
+    out = f"  -d '{lines[0]}\n"
+    for ln in lines[1:]:
+        out += f"  {ln}\n"
+    return out.rstrip("\n") + "'"
+
+
 def _curl_sample(method: str, params: list[Any]) -> str:
     """Generate a cURL command that POSTs the JSON-RPC call to the public endpoint."""
-    body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
-    encoded = json.dumps(body, separators=(",", ":"))
-    # Use single-quote JSON for shell safety; escape any single quotes inside.
-    encoded_for_shell = encoded.replace("'", "'\\''")
     return (
         f"curl -X POST {PUBLIC_ENDPOINT} \\\n"
         "  -H \"Content-Type: application/json\" \\\n"
-        f"  -d '{encoded_for_shell}'"
+        f"{_curl_body(method, params)}"
     )
 
 
@@ -1089,13 +1097,10 @@ HISTORICAL_NOTE_RUST = (
 
 
 def _historical_curl(method: str, params: list[Any]) -> str:
-    body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
-    encoded = json.dumps(body, separators=(",", ":"))
-    encoded_for_shell = encoded.replace("'", "'\\''")
     return (
         f"curl -X POST {PUBLIC_ENDPOINT}/historical \\\n"
         "  -H \"Content-Type: application/json\" \\\n"
-        f"  -d '{encoded_for_shell}'"
+        f"{_curl_body(method, params)}"
     )
 
 
@@ -1159,12 +1164,11 @@ WS_PUBLIC = "wss://public.rpc.solanavibestation.com"
 
 def _ws_curl(method, params):
     body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
-    encoded = json.dumps(body, separators=(",", ":"))
-    encoded_for_shell = encoded.replace("'", "'\\''")
+    pretty = json.dumps(body, indent=2, ensure_ascii=False).replace("'", "'\\''")
     return (
         "# cURL doesn't speak WebSocket — use `websocat` (or `wscat -c`).\n"
         "# Install:  cargo install websocat   # or  npm install -g wscat\n"
-        f"echo '{encoded_for_shell}' | websocat {WS_PUBLIC}"
+        f"echo '{pretty}' | websocat {WS_PUBLIC}"
     )
 
 

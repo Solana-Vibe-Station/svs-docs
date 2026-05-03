@@ -77,17 +77,4 @@ by the generator; edit the YAML directly.
 
 ## Connecting to GitBook
 
-In your GitBook space, register each spec as its own OpenAPI source via
-**Sidebar → OpenAPI → Add specification → URL**, pointed at the raw GitHub URL
-for the file. For example:
-
-```
-https://raw.githubusercontent.com/<owner>/svs-docs/main/api-specs/solana-rpc/getBalance.yaml
-```
-
-Then embed the operation in any markdown page with a single block:
-
-```
-{% openapi-operation spec="solanaRpcGetBalance" path="/" method="post" %}
-{% endopenapi-operation %}
-```
+In your GitBook space, register each spec as its own 

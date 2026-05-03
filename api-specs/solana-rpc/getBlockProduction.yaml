@@ -192,7 +192,16 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getBlockProduction","params":[{"commitment":"finalized"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getBlockProduction",
+              "params": [
+                {
+                  "commitment": "finalized"
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

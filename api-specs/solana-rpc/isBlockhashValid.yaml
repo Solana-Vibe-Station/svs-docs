@@ -155,7 +155,17 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"isBlockhashValid","params":["3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA",{"commitment":"processed"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "isBlockhashValid",
+              "params": [
+                "3Eq21vXNB5s86c62bVuUfTeaMif1N2kUqRPBmGRJhyTA",
+                {
+                  "commitment": "processed"
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

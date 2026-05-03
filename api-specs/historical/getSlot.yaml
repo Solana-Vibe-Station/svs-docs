@@ -130,7 +130,16 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com/historical \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getSlot","params":[{"commitment":"finalized"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getSlot",
+              "params": [
+                {
+                  "commitment": "finalized"
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

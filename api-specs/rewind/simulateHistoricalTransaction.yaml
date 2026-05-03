@@ -239,9 +239,21 @@ paths:
       - lang: shell
         label: cURL
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com \
+          curl -X POST https://public.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"simulateHistoricalTransaction","params":["<base64-tx>",{"slot":250000000,"encoding":"base64","innerInstructions":true}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "simulateHistoricalTransaction",
+              "params": [
+                "<base64-tx>",
+                {
+                  "slot": 250000000,
+                  "encoding": "base64",
+                  "innerInstructions": true
+                }
+              ]
+            }'
       - lang: javascript
         label: JavaScript
         source: |-

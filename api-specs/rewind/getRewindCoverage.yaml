@@ -230,15 +230,29 @@ paths:
       - lang: shell
         label: cURL (full)
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com \
+          curl -X POST https://public.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getRewindCoverage","params":[]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getRewindCoverage",
+              "params": []
+            }'
       - lang: shell
         label: cURL (summary)
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com \
+          curl -X POST https://public.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getRewindCoverage","params":[{"includeGaps":false}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getRewindCoverage",
+              "params": [
+                {
+                  "includeGaps": false
+                }
+              ]
+            }'
       - lang: javascript
         label: JavaScript
         source: |-

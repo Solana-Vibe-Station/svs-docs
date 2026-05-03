@@ -197,7 +197,19 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getSignatureStatuses","params":[["4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"],{"searchTransactionHistory":true}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getSignatureStatuses",
+              "params": [
+                [
+                  "4hXTCkRzt9WyecNzV1XPgCDfGAZzQKNxLXgynz5QDuWWPSAZBZSHptvWRL3BjCvzUXRdKvHL2b7yGrRQcWyaqsa"
+                ],
+                {
+                  "searchTransactionHistory": true
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

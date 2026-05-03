@@ -121,7 +121,12 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getFirstAvailableBlock","params":[]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getFirstAvailableBlock",
+              "params": []
+            }'
       - lang: python
         label: Python
         source: |-

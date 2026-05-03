@@ -141,7 +141,21 @@ paths:
         source: |-
           # cURL doesn't speak WebSocket — use `websocat` (or `wscat -c`).
           # Install:  cargo install websocat   # or  npm install -g wscat
-          echo '{"jsonrpc":"2.0","id":1,"method":"logsSubscribe","params":[{"mentions":["11111111111111111111111111111111"]},{"commitment":"finalized"}]}' | websocat wss://public.rpc.solanavibestation.com
+          echo '{
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "logsSubscribe",
+            "params": [
+              {
+                "mentions": [
+                  "11111111111111111111111111111111"
+                ]
+              },
+              {
+                "commitment": "finalized"
+              }
+            ]
+          }' | websocat wss://public.rpc.solanavibestation.com
       - lang: python
         label: Python
         source: |-

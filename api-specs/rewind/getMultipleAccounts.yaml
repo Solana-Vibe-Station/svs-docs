@@ -192,9 +192,23 @@ paths:
       - lang: shell
         label: cURL
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com \
+          curl -X POST https://public.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getMultipleAccounts","params":[["<pubkey1>","<pubkey2>"],{"slot":250000000,"encoding":"base64"}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getMultipleAccounts",
+              "params": [
+                [
+                  "<pubkey1>",
+                  "<pubkey2>"
+                ],
+                {
+                  "slot": 250000000,
+                  "encoding": "base64"
+                }
+              ]
+            }'
       - lang: javascript
         label: JavaScript
         source: |-

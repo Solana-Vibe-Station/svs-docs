@@ -185,7 +185,19 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getInflationReward","params":[["FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"],{"epoch":964}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getInflationReward",
+              "params": [
+                [
+                  "FbXMxhgoCYbZ4dWaCVzJWeFqW2tQ8sR82Hi8YyQrEaxR"
+                ],
+                {
+                  "epoch": 964
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

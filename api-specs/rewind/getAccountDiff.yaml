@@ -218,9 +218,26 @@ paths:
       - lang: shell
         label: cURL
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com \
+          curl -X POST https://public.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getAccountDiff","params":["<pubkey>",{"anchorA":{"signature":"<sig>","position":"before"},"anchorB":{"signature":"<sig>","position":"after"}}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getAccountDiff",
+              "params": [
+                "<pubkey>",
+                {
+                  "anchorA": {
+                    "signature": "<sig>",
+                    "position": "before"
+                  },
+                  "anchorB": {
+                    "signature": "<sig>",
+                    "position": "after"
+                  }
+                }
+              ]
+            }'
       - lang: javascript
         label: JavaScript
         source: |-

@@ -244,9 +244,21 @@ paths:
       - lang: shell
         label: cURL
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com \
+          curl -X POST https://public.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getAccountChanges","params":["<pubkey>",{"fromSlot":250000000,"toSlot":250100000,"limit":100}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getAccountChanges",
+              "params": [
+                "<pubkey>",
+                {
+                  "fromSlot": 250000000,
+                  "toSlot": 250100000,
+                  "limit": 100
+                }
+              ]
+            }'
       - lang: javascript
         label: JavaScript
         source: |-

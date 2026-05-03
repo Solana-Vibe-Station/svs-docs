@@ -238,7 +238,22 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getProgramAccounts","params":["TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq",{"encoding":"base64","filters":[{"dataSize":165}]}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getProgramAccounts",
+              "params": [
+                "TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq",
+                {
+                  "encoding": "base64",
+                  "filters": [
+                    {
+                      "dataSize": 165
+                    }
+                  ]
+                }
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

@@ -174,7 +174,14 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"getTokenLargestAccounts","params":["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "getTokenLargestAccounts",
+              "params": [
+                "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+              ]
+            }'
       - lang: python
         label: Python
         source: |-

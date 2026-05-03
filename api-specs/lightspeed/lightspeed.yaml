@@ -171,7 +171,19 @@ paths:
           curl -X POST https://basic.swqos.solanavibestation.com/lightspeed \
             -H "Content-Type: application/json" \
             -H "Authorization: your-api-key-here" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"sendTransaction","params":["<SIGNED_TX_BASE58>",{"encoding":"base58","skipPreflight":true,"maxRetries":0}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "sendTransaction",
+              "params": [
+                "<SIGNED_TX_BASE58>",
+                {
+                  "encoding": "base58",
+                  "skipPreflight": true,
+                  "maxRetries": 0
+                }
+              ]
+            }'
       - lang: javascript
         label: JavaScript
         source: |-

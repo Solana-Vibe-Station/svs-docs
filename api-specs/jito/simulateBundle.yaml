@@ -217,7 +217,19 @@ paths:
         source: |-
           curl -X POST https://public.rpc.solanavibestation.com \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"simulateBundle","params":[{"encodedTransactions":["<TX1_BASE64>"],"skipSigVerify":true}]}'
+            -d '{
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "simulateBundle",
+              "params": [
+                {
+                  "encodedTransactions": [
+                    "<TX1_BASE64>"
+                  ],
+                  "skipSigVerify": true
+                }
+              ]
+            }'
       - lang: typescript
         label: TypeScript
         source: |-
@@ -352,6 +364,4 @@ components:
       name: api_key
       description: Pass `?api_key=<api-key>` on the URL.
 security: *id001
-      name: api_key
-      description: Pass '?api_key=<api-key>' on the URL.
-security: *id001
+  
