@@ -15,8 +15,6 @@ info:
     name: MIT OR Apache-2.0
     url: https://opensource.org/licenses/MIT
 servers:
-- url: https://public.rpc.solanavibestation.com
-  description: Public endpoint (rate-limited, no auth)
 - url: https://basic.rpc.solanavibestation.com
   description: Basic tier
 - url: https://ultra.rpc.solanavibestation.com
@@ -192,7 +190,7 @@ paths:
       - lang: shell
         label: cURL
         source: |-
-          curl -X POST https://public.rpc.solanavibestation.com/rewind \
+          curl -X POST https://basic.rpc.solanavibestation.com/rewind \
             -H "Content-Type: application/json" \
             -d '{
               "jsonrpc": "2.0",
@@ -212,7 +210,7 @@ paths:
       - lang: javascript
         label: JavaScript
         source: |-
-          const res = await fetch("https://public.rpc.solanavibestation.com", {
+          const res = await fetch("https://basic.rpc.solanavibestation.com", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -236,7 +234,7 @@ paths:
           import requests
 
           resp = requests.post(
-              "https://public.rpc.solanavibestation.com",
+              "https://basic.rpc.solanavibestation.com",
               json={
                   "jsonrpc": "2.0",
                   "id": 1,
