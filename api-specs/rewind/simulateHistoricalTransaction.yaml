@@ -12,6 +12,8 @@ info:
     2. **`slot` only** — end-of-slot at `slot`. Use `preStateSlot` to override where account state is loaded from (e.g. `slot - 1` for "as if this tx ran at slot start"); ALTs are always resolved at `slot`.
 
     **Filter set.** Simulations that touch a filtered owner or pubkey are refused with `-32017 FilteredAccountStale`. See `getRewindCoverage.filteredOwners`.
+
+    **Account overrides.** `accountOverrides` lets you swap out individual accounts for the simulation. Each entry is either *static* (you supply the bytes for hypothetical "what-if" scenarios) or *load-at* (the server reads the account from the archive at a per-account slot or transaction anchor, so you can time-shift one account relative to the rest of the simulation). See the `accountOverrides` config field below for the full schema and refusal rules.
   version: 1.0.0
   contact:
     name: Solana Vibe Station
@@ -134,6 +136,30 @@ paths:
                           type: boolean
                           default: false
                           description: When `false` (default), simulations whose resolved load slot lands inside a known MISSING/UNKNOWN gap return `-32018 SlotInArchiveGap`.
+                        accountOverrides:
+                          type: object
+                          description: |
+                            Map of base58 pubkey to override entry. Each override replaces whatever the loader would have produced for that pubkey, so overrides always win.
+
+                            Two entry shapes are supported, discriminated by the presence of a `loadAt` field:
+
+                            - **Static** — you supply the bytes (`lamports`, `owner`, `data`, optional `executable` and `rentEpoch`). Use to inject hypothetical state that didn't exist at any historical slot ("what if this account held X tokens?").
+                            - **LoadAt** — you supply a per-account `loadAt: { slot }` or `loadAt: { anchor: { signature, position } }` and the server reads the archive's actual value at that boundary. Use to time-shift one account relative to the rest of the simulation (e.g. "use the oracle as it appeared 50 slots later").
+
+                            **Limits and refusal rules**
+
+                            - Maximum **64** entries per request (across both shapes).
+                            - Sysvars (`Clock`, `Rent`, ...) cannot be overridden — they're reconstructed from the simulation slot. Use `preStateSlot` to shift apparent time.
+                            - Address Lookup Tables cannot be overridden — override the resolved accounts instead.
+                            - Static overrides of an upgradeable program's *programdata* account are rejected; override the program account itself, or use `LoadAt` on both at the same slot.
+                            - LoadAt overrides that slot-shift an upgradeable program without naming a matching slot for its programdata (or vice versa) return `-32602 ProgramDataSlotMismatch`.
+                            - Static-override data must decode to ≤ 10 MiB.
+
+                            **Truth signal.** Any override that successfully applies appears in `value.rewindOverriddenAccounts`. A non-empty array means the result is hypothetical, not archive-truthful.
+
+                            **Filter set interaction.** Static overrides for Vote/Stake accounts bypass the `-32017 FilteredAccountStale` refusal (your bytes, your truth). LoadAt overrides do not — the loader still enforces the filter set.
+                          additionalProperties:
+                            $ref: '#/components/schemas/AccountOverride'
             examples:
               end_of_slot:
                 summary: End-of-slot simulation.
@@ -162,6 +188,59 @@ paths:
                     anchor:
                       signature: <base58-sig>
                       position: before
+              static_override:
+                summary: Inject hypothetical state via a static account override.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: simulateHistoricalTransaction
+                  params:
+                  - <base64-tx>
+                  - slot: 285000000
+                    encoding: base64
+                    accountOverrides:
+                      9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM:
+                        lamports: 1000000000
+                        owner: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+                        data:
+                        - BASE64BYTES==
+                        - base64
+              mixed_overrides:
+                summary: Mix static and load-at — inject one account, time-shift another.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: simulateHistoricalTransaction
+                  params:
+                  - <base64-tx>
+                  - slot: 285000000
+                    encoding: base64
+                    accountOverrides:
+                      9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM:
+                        lamports: 1000000000
+                        owner: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+                        data:
+                        - BASE64BYTES==
+                        - base64
+                      OracleAcctPubkey1111111111111111111111111111:
+                        loadAt:
+                          slot: 285000050
+              loadat_anchored:
+                summary: Read an oracle "as of" right after a known refresh tx.
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: simulateHistoricalTransaction
+                  params:
+                  - <base64-tx>
+                  - slot: 285000000
+                    encoding: base64
+                    accountOverrides:
+                      OracleAcctPubkey1111111111111111111111111111:
+                        loadAt:
+                          anchor:
+                            signature: <base58-sig>
+                            position: after
       responses:
         '200':
           description: Successful simulation. Failed transactions still return logs and `unitsConsumed`; the application-level error is reported in `result.value.err`.
@@ -217,6 +296,8 @@ paths:
                         stackHeight: 2
                     rewindSlot: 250000000
                     rewindLoadSlot: 250000000
+                    rewindOverriddenAccounts: []
+                    rewindOverrideLoads: {}
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -361,9 +442,10 @@ components:
         Method-specific codes:
         - `-32014` `slot` past the archive's `latestSlot`.
         - `-32015` `slot` older than the archive's `earliestSlot`.
-        - `-32016` `anchor.signature` not indexed in the archive.
-        - `-32017` FilteredAccountStale — tx touches an account in the filter set.
-        - `-32018` SlotInArchiveGap — resolved load slot inside a known MISSING/UNKNOWN gap.
+        - `-32016` `anchor.signature` (or `accountOverrides[].loadAt.anchor.signature`) not indexed in the archive.
+        - `-32017` FilteredAccountStale — tx touches an account in the filter set (does not apply to `Static` overrides).
+        - `-32018` SlotInArchiveGap — resolved load slot inside a known MISSING/UNKNOWN gap. For `LoadAt` overrides this is enforced per-entry, subject to the request-level `tolerateGaps`.
+        - `-32602` Invalid params. For `accountOverrides`, includes: bad pubkey or encoding, oversize `data`, more than 64 entries, sysvar / ALT / discovered-programdata target, malformed `loadAt`, or `ProgramDataSlotMismatch` (a `LoadAt` slot-shifted a program without naming a matching slot for its programdata, or vice versa — the error message names both pubkeys).
         - `-32603` Internal error. Treat as transient; safe to retry.
       properties:
         code:
@@ -387,6 +469,59 @@ components:
           - before
           - after
           default: before
+    AccountOverride:
+      oneOf:
+      - $ref: '#/components/schemas/StaticOverride'
+      - $ref: '#/components/schemas/LoadAtOverride'
+      description: One entry in `accountOverrides`. Either a static override (you supply the bytes) or a load-at override (the server reads at a per-account boundary), discriminated by the presence of a `loadAt` field.
+    StaticOverride:
+      type: object
+      description: Customer-supplied account state. Replaces whatever the loader would have produced for this pubkey.
+      required:
+      - lamports
+      - owner
+      - data
+      properties:
+        lamports:
+          type: integer
+          format: int64
+          description: Account lamports.
+        owner:
+          type: string
+          description: Base58 owner program id.
+        data:
+          type: array
+          description: '`[encoded_bytes, encoding]`. `encoding` is `"base64"` or `"base58"`. Decoded data must be ≤ 10 MiB.'
+          minItems: 2
+          maxItems: 2
+          items:
+            type: string
+        executable:
+          type: boolean
+          default: false
+          description: Whether the account is an executable program.
+        rentEpoch:
+          type: integer
+          format: int64
+          description: Rent epoch. Defaults to the rent-exempt sentinel (`2^64 - 1`).
+    LoadAtOverride:
+      type: object
+      description: Per-account positioning. The server loads this account from the archive at the boundary specified by `loadAt`, while the rest of the simulation runs at the request-level position.
+      required:
+      - loadAt
+      properties:
+        loadAt:
+          $ref: '#/components/schemas/LoadAtSpec'
+    LoadAtSpec:
+      type: object
+      description: Per-account position spec. Set either `slot` (end-of-slot) or `anchor` (per-transaction).
+      properties:
+        slot:
+          type: integer
+          format: int64
+          description: End-of-slot boundary. Required unless `anchor` is set.
+        anchor:
+          $ref: '#/components/schemas/Anchor'
     RewindContext:
       type: object
       required:
@@ -446,6 +581,22 @@ components:
           type: integer
           format: int64
           description: Rewind extension. Slot at which non-ALT account state was loaded; equals `rewindSlot` unless `preStateSlot` overrode it.
+        rewindOverriddenAccounts:
+          type: array
+          description: Rewind extension. Base58 pubkeys for which an `accountOverrides` entry was supplied and successfully applied. Always present; empty when no overrides were requested. A non-empty array means the result is hypothetical, not archive-truthful.
+          items:
+            type: string
+        rewindOverrideLoads:
+          type: object
+          description: Rewind extension. Map of `pubkey → { loadSlot }` for each `LoadAt` override, reporting the actual slot the engine loaded each per-account override from. `Static` overrides do not appear here. Always present; empty when no `LoadAt` entries were requested.
+          additionalProperties:
+            type: object
+            required:
+            - loadSlot
+            properties:
+              loadSlot:
+                type: integer
+                format: int64
   responses:
     UnauthorizedError:
       description: Authentication required or invalid.
