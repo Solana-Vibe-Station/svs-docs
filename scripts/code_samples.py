@@ -981,6 +981,13 @@ EXTRA_EXAMPLES: dict[str, list[dict[str, Any]]] = {
             "params": ["TokenkegQfeZyiNwAJsyFbPVwwQnLjMi6tsmbMrWcbq", {"encoding": "base64", "withContext": True}],
         },
     ],
+    "getTokenLargestAccounts": [
+        {
+            "name": "with_limit",
+            "summary": "Return the top 50 holders instead of the Solana-standard 20 (SVS extension, max 100).",
+            "params": ["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", {"limit": 50}],
+        },
+    ],
     "getBlock": [
         {
             "name": "signatures_only",

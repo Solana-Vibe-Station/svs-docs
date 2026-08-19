@@ -36,11 +36,11 @@ paths:
   /:
     post:
       operationId: getTokenLargestAccounts
-      summary: getTokenLargestAccounts — 20 largest accounts of a token
+      summary: getTokenLargestAccounts — Largest accounts of a token (default 20, up to 100)
       tags:
       - Account
       description: |
-        Returns the 20 largest accounts of a particular SPL Token type. This method is essential for analyzing token distribution, identifying whale accounts, and understanding token concentration patterns.
+        Returns the largest accounts of a particular SPL Token type — the Solana-standard 20 by default, or up to 100 via the SVS-specific `limit` config field. This method is essential for analyzing token distribution, identifying whale accounts, and understanding token concentration patterns.
         **Parameters**
 
         0. `mint` (required) — Token mint pubkey, base-58.
@@ -97,6 +97,13 @@ paths:
                           format: int64
                           description: Minimum slot at which the request can be evaluated. The RPC node will reject the request with a `MinContextSlotNotReached` error if its current root is below this value. Use this for read-after-write consistency in multi-step workflows.
                           example: 416990000
+                        limit:
+                          type: integer
+                          format: int64
+                          description: 'SVS extension (not part of the standard Solana RPC API): number of largest accounts to return, 1–100. Omit for the Solana-standard 20 — existing clients are unaffected. The full holder set is already sorted server-side, so a larger limit costs nothing extra. Values over the maximum (or otherwise invalid) are rejected with a `-32602` error naming the cap (e.g. `limit 101 exceeds the maximum of 100`) rather than silently clamped.'
+                          example: 50
+                          minimum: 1
+                          maximum: 100
             examples:
               default:
                 summary: Standard request — required params only.
@@ -106,6 +113,15 @@ paths:
                   method: getTokenLargestAccounts
                   params:
                   - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+              with_limit:
+                summary: Return the top 50 holders instead of the Solana-standard 20 (SVS extension, max 100).
+                value:
+                  jsonrpc: '2.0'
+                  id: 1
+                  method: getTokenLargestAccounts
+                  params:
+                  - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                  - limit: 50
       responses:
         '200':
           description: Successful `getTokenLargestAccounts` response.
