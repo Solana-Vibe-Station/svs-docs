@@ -1,0 +1,212 @@
+openapi: 3.0.3
+info:
+  title: 'Lightspeed: /lightspeed/tipinfo'
+  description: |-
+    Read the TTL ladder, limits, minimum-tip floor and current fetch quota this edge serves. Clients should call this once at startup — and again on a `400 ttl_too_long` or a `503` from `/lightspeed/fetchtipaddress` — rather than hard-coding the ladder.
+
+    Public, cheap, unauthenticated.
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://basic.rpc.solanavibestation.com
+  description: Basic tier with Lightspeed
+- url: https://ultra.rpc.solanavibestation.com
+  description: Ultra tier with Lightspeed
+- url: https://elite.rpc.solanavibestation.com
+  description: Elite tier with Lightspeed
+- url: https://epic.rpc.solanavibestation.com
+  description: Epic tier with Lightspeed
+- url: https://basic.swqos.solanavibestation.com
+  description: Basic SWQoS tier with Lightspeed
+- url: https://ultra.swqos.solanavibestation.com
+  description: Ultra SWQoS tier with Lightspeed
+- url: https://elite.swqos.solanavibestation.com
+  description: Elite SWQoS tier with Lightspeed
+tags:
+- name: Lightspeed
+  description: Low-latency transaction landing via the SVS Lightspeed engine.
+paths:
+  /lightspeed/tipinfo:
+    get:
+      operationId: lightspeedTipInfo
+      summary: tipInfo — Discover TTL classes, limits, and quota
+      tags:
+      - Lightspeed
+      description: |
+        Returns the TTL ladder the edge serves, whether each class can be issued **right now**, the maximum count per fetch, the minimum tip in lamports for a dynamic address, and the current fetch quota for this API key (or the anonymous bucket).
+
+        `?ttl=N` on `/lightspeed/fetchtipaddress` snaps **up** to the smallest `ttl_seconds` ≥ N in this ladder. `expires_at_if_fetched_now` shows what `fetchtipaddress` would return this second — it advances as the open batch's window ends and the next opens.
+      responses:
+        '200':
+          description: TTL ladder and quota for this edge.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipInfoResponse'
+              example:
+                ttl_classes:
+                - ttl_seconds: 3600
+                  available: true
+                  expires_at_if_fetched_now: 1756000000
+                - ttl_seconds: 86400
+                  available: true
+                  expires_at_if_fetched_now: 1756086000
+                - ttl_seconds: 172800
+                  available: false
+                  expires_at_if_fetched_now: null
+                default_ttl_seconds: 3600
+                max_ttl_seconds: 172800
+                max_count: 16
+                min_lamports: 890880
+                quota:
+                  fetch_rate_per_second: 5.0
+                  fetch_burst: 20
+                  fetch_daily_cap: null
+                served_by: ams1
+        '429':
+          description: Anonymous quota exceeded (no `Authorization` header).
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      security: &id001
+      - {}
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X GET https://basic.swqos.solanavibestation.com/lightspeed/tipinfo
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const res = await fetch(
+            "https://basic.swqos.solanavibestation.com/lightspeed/tipinfo",
+          );
+          const info = await res.json();
+          console.log("min tip lamports:", info.min_lamports);
+          console.log("ttl classes:", info.ttl_classes.map(c => c.ttl_seconds));
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          info = requests.get(
+              "https://basic.swqos.solanavibestation.com/lightspeed/tipinfo",
+              timeout=10,
+          ).json()
+          print("min tip lamports:", info["min_lamports"])
+          print("ttl classes:", [c["ttl_seconds"] for c in info["ttl_classes"]])
+components:
+  schemas:
+    TtlClass:
+      type: object
+      required:
+      - ttl_seconds
+      - available
+      properties:
+        ttl_seconds:
+          type: integer
+          format: int64
+          description: TTL class in seconds.
+        available:
+          type: boolean
+          description: Whether this class can be issued right now. `false` means `/lightspeed/fetchtipaddress` for this class would 503.
+        expires_at_if_fetched_now:
+          type: integer
+          format: int64
+          nullable: true
+          description: Absolute Unix-seconds expiry a fetch would return this instant. `null` when `available` is `false`.
+    Quota:
+      type: object
+      required:
+      - fetch_rate_per_second
+      - fetch_burst
+      properties:
+        fetch_rate_per_second:
+          type: number
+          format: double
+          description: Token-bucket refill rate for `/lightspeed/fetchtipaddress`.
+        fetch_burst:
+          type: integer
+          format: int64
+          description: Token-bucket capacity.
+        fetch_daily_cap:
+          type: integer
+          format: int64
+          nullable: true
+          description: Optional daily fetch cap. `null` means no daily cap.
+    TipInfoResponse:
+      type: object
+      required:
+      - ttl_classes
+      - default_ttl_seconds
+      - max_ttl_seconds
+      - max_count
+      - min_lamports
+      - quota
+      - served_by
+      properties:
+        ttl_classes:
+          type: array
+          description: Full ladder of TTL classes this edge serves.
+          items:
+            $ref: '#/components/schemas/TtlClass'
+        default_ttl_seconds:
+          type: integer
+          format: int64
+          description: Used when `/lightspeed/fetchtipaddress` is called with no `ttl` parameter.
+        max_ttl_seconds:
+          type: integer
+          format: int64
+          description: Ceiling for the `ttl` query on `/lightspeed/fetchtipaddress`. Above this returns `400 ttl_too_long`.
+        max_count:
+          type: integer
+          format: int32
+          description: Ceiling for the `count` query on `/lightspeed/fetchtipaddress`.
+        min_lamports:
+          type: integer
+          format: int64
+          description: Rent-exempt minimum for a dynamic tip address. A route's `minimum_lamports` may be higher.
+          example: 890880
+        quota:
+          $ref: '#/components/schemas/Quota'
+        served_by:
+          type: string
+          description: Informational — which edge answered this call.
+          example: ams1
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001

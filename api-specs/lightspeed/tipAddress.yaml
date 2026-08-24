@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: 'Lightspeed: /lightspeed/tipaddress/{pubkey}'
+  description: |-
+    Check whether a given base58 pubkey is currently accepted as a Lightspeed tip destination. Useful for validating a cached address before including it in a transaction.
+
+    Dynamic addresses are accepted on **every** Lightspeed edge in every region the moment they are issued. Static tip addresses have no expiry.
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://basic.rpc.solanavibestation.com
+  description: Basic tier with Lightspeed
+- url: https://ultra.rpc.solanavibestation.com
+  description: Ultra tier with Lightspeed
+- url: https://elite.rpc.solanavibestation.com
+  description: Elite tier with Lightspeed
+- url: https://epic.rpc.solanavibestation.com
+  description: Epic tier with Lightspeed
+- url: https://basic.swqos.solanavibestation.com
+  description: Basic SWQoS tier with Lightspeed
+- url: https://ultra.swqos.solanavibestation.com
+  description: Ultra SWQoS tier with Lightspeed
+- url: https://elite.swqos.solanavibestation.com
+  description: Elite SWQoS tier with Lightspeed
+tags:
+- name: Lightspeed
+  description: Low-latency transaction landing via the SVS Lightspeed engine.
+paths:
+  /lightspeed/tipaddress/{pubkey}:
+    get:
+      operationId: lightspeedCheckTipAddress
+      summary: checkTipAddress — Is this pubkey accepted as a tip destination?
+      tags:
+      - Lightspeed
+      description: |
+        Returns whether `pubkey` is currently accepted as a Lightspeed tip destination.
+
+        - `valid: true` and `is_static: false` → dynamic address with a known `expires_at`.
+        - `valid: true` and `is_static: true` → permanent static address; `expires_at` is `null`.
+        - `valid: false` → not accepted right now (never issued, expired, or unknown).
+      parameters:
+      - name: pubkey
+        in: path
+        required: true
+        description: Base58 Solana pubkey to check.
+        schema:
+          type: string
+          pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
+        example: 7xKq3vLcBqmYh4pMcNJXt5wLqDcTxaSPvXFqZjZzYtQK
+      responses:
+        '200':
+          description: Address status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipAddressResponse'
+              examples:
+                dynamic_valid:
+                  summary: Dynamic address, currently valid.
+                  value:
+                    address: 7xKq3...
+                    valid: true
+                    is_static: false
+                    expires_at: 1755821400
+                static_valid:
+                  summary: Static address (no expiry).
+                  value:
+                    address: svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip
+                    valid: true
+                    is_static: true
+                    expires_at: null
+                not_valid:
+                  summary: Not currently a Lightspeed tip destination.
+                  value:
+                    address: 7xKq3...
+                    valid: false
+        '400':
+          description: Malformed pubkey.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              example:
+                error: not a base58 pubkey
+      security: &id001
+      - {}
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X GET https://basic.swqos.solanavibestation.com/lightspeed/tipaddress/7xKq3...
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const res = await fetch(
+            `https://basic.swqos.solanavibestation.com/lightspeed/tipaddress/${pubkey}`,
+          );
+          const { valid, is_static, expires_at } = await res.json();
+          if (!valid) throw new Error("tip address no longer accepted");
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.get(
+              f"https://basic.swqos.solanavibestation.com/lightspeed/tipaddress/{pubkey}",
+              timeout=10,
+          ).json()
+          if not resp["valid"]:
+              raise RuntimeError("tip address no longer accepted")
+components:
+  schemas:
+    TipAddressResponse:
+      type: object
+      required:
+      - address
+      - valid
+      properties:
+        address:
+          type: string
+          description: Echoed back from the path.
+        valid:
+          type: boolean
+          description: Whether this address is currently accepted as a Lightspeed tip destination.
+        is_static:
+          type: boolean
+          description: Only present when `valid` is `true`. `true` for a permanent operator-configured address, `false` for a dynamic address.
+        expires_at:
+          type: integer
+          format: int64
+          nullable: true
+          description: Absolute Unix-seconds expiry for dynamic addresses. `null` for static addresses. Only present when `valid` is `true`.
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL.
+security: *id001

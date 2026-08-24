@@ -1,0 +1,303 @@
+openapi: 3.0.3
+info:
+  title: 'Lightspeed: /lightspeed/fetchtipaddress'
+  description: |-
+    Issue a dynamic tip address to use in the transfer instruction of a Lightspeed submission. Dynamic addresses are unique — never issued twice, to anyone, ever — and are valid on **every** Lightspeed edge the instant they are issued.
+
+    A dynamic tip address must receive **at least the rent-exempt minimum** for an empty account (`min_lamports`, currently `890880` lamports) **and** the route's `minimum_lamports`. Static tip addresses only need the route minimum.
+
+    Two response shapes: calling with **no query parameters** returns the legacy single-address shape (kept unchanged for existing clients). Passing **any** query parameter switches to the full batch response shape.
+
+    Call `/lightspeed/tipinfo` once at startup to discover the TTL ladder, limits, and current quota, rather than hard-coding them.
+  version: 1.0.0
+  contact:
+    name: Solana Vibe Station
+    url: https://www.solanavibestation.com
+  license:
+    name: MIT OR Apache-2.0
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: https://basic.rpc.solanavibestation.com
+  description: Basic tier with Lightspeed
+- url: https://ultra.rpc.solanavibestation.com
+  description: Ultra tier with Lightspeed
+- url: https://elite.rpc.solanavibestation.com
+  description: Elite tier with Lightspeed
+- url: https://epic.rpc.solanavibestation.com
+  description: Epic tier with Lightspeed
+- url: https://basic.swqos.solanavibestation.com
+  description: Basic SWQoS tier with Lightspeed
+- url: https://ultra.swqos.solanavibestation.com
+  description: Ultra SWQoS tier with Lightspeed
+- url: https://elite.swqos.solanavibestation.com
+  description: Elite SWQoS tier with Lightspeed
+tags:
+- name: Lightspeed
+  description: Low-latency transaction landing via the SVS Lightspeed engine.
+paths:
+  /lightspeed/fetchtipaddress:
+    get:
+      operationId: fetchTipAddress
+      summary: fetchTipAddress — Issue one or more dynamic Lightspeed tip addresses
+      tags:
+      - Lightspeed
+      description: |
+        Returns one or more dynamic tip addresses for use in a Lightspeed `sendTransaction` submission.
+
+        **Response shape**
+
+        - **No query parameters** → the legacy single-address shape: `{ address, validity_duration_seconds, expires_at }`.
+        - **Any query parameter present** → the full batch shape: `{ addresses[], ttl_seconds, requested_ttl_seconds, expires_at, min_lamports, issued_by }`.
+
+        The `addresses` array **may be shorter than `count`** if this edge's slice of the batch ran low mid-request; retry for the rest.
+
+        `expires_at` is absolute and authoritative — always prefer it over `ttl_seconds`. All addresses in a batch expire together, so `expires_at` may exceed "now + ttl" by up to one batch window.
+
+        **Quota**
+
+        `Authorization: <api-key>` is the quota key for a token bucket (rate + burst, optional daily cap). Requests without an API key share one anonymous bucket.
+      parameters:
+      - name: ttl
+        in: query
+        required: false
+        description: Desired lifetime in seconds. Snapped **up** to the smallest TTL class this edge serves. Above `max_ttl_seconds` returns `400 ttl_too_long`.
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        example: 900
+      - name: count
+        in: query
+        required: false
+        description: Number of addresses to issue, `1..=max_count`.
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          default: 1
+        example: 4
+      responses:
+        '200':
+          description: Success. Response shape depends on whether any query parameter was passed.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/LegacyTipAddressResponse'
+                - $ref: '#/components/schemas/BatchTipAddressResponse'
+              examples:
+                legacy:
+                  summary: No query parameters — legacy single-address response.
+                  value:
+                    address: 7xKq3...
+                    validity_duration_seconds: 3600
+                    expires_at: 1755821400
+                batch:
+                  summary: Any query parameter present — full batch response.
+                  value:
+                    addresses:
+                    - 7xKq3...
+                    - 9pLm4...
+                    - 3rNz8...
+                    - 5vBt2...
+                    ttl_seconds: 900
+                    requested_ttl_seconds: 400
+                    expires_at: 1755821400
+                    min_lamports: 890880
+                    issued_by: nyc1
+        '400':
+          description: |
+            Bad request. Possible bodies:
+            - `{"error":"ttl_too_long","max_ttl_seconds":86400}` — `ttl` above the max this edge serves.
+            - `{"error":"count_out_of_range","max_count":16}` — `count` is 0 or above the max.
+            - `{"error":"ttl must be an integer number of seconds"}` — unparsable `ttl`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+              examples:
+                ttl_too_long:
+                  value:
+                    error: ttl_too_long
+                    max_ttl_seconds: 86400
+                count_out_of_range:
+                  value:
+                    error: count_out_of_range
+                    max_count: 16
+        '429':
+          description: Quota exceeded for this API key.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotaExceededBody'
+              example:
+                error: quota_exceeded
+                reason: rate limit
+                retry_after_seconds: 5
+        '503':
+          description: |
+            Temporarily unavailable. This is normal during batch rotation and typically clears within minutes.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Suggested seconds to wait before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnavailableBody'
+              example:
+                error: unavailable
+                details: no batch open for that ttl class yet
+                ttl_seconds: 3600
+      security: &id001
+      - {}
+      - AuthHeader: []
+      - URLParameter: []
+      x-codeSamples:
+      - lang: shell
+        label: cURL
+        source: |-
+          curl -X GET 'https://basic.swqos.solanavibestation.com/lightspeed/fetchtipaddress?ttl=900&count=4' \
+            -H "Authorization: your-api-key-here"
+      - lang: javascript
+        label: JavaScript
+        source: |-
+          const res = await fetch(
+            "https://basic.swqos.solanavibestation.com/lightspeed/fetchtipaddress?ttl=900&count=4",
+            { headers: { Authorization: "your-api-key-here" } },
+          );
+          const { addresses, expires_at, min_lamports } = await res.json();
+          console.log(`got ${addresses.length} addresses, valid until ${expires_at}`);
+      - lang: python
+        label: Python
+        source: |-
+          import requests
+
+          resp = requests.get(
+              "https://basic.swqos.solanavibestation.com/lightspeed/fetchtipaddress",
+              params={"ttl": 900, "count": 4},
+              headers={"Authorization": "your-api-key-here"},
+              timeout=10,
+          ).json()
+          print(f"got {len(resp['addresses'])} addresses, valid until {resp['expires_at']}")
+components:
+  schemas:
+    LegacyTipAddressResponse:
+      type: object
+      description: Returned when no query parameters are passed. Kept unchanged for existing clients.
+      required:
+      - address
+      - validity_duration_seconds
+      - expires_at
+      properties:
+        address:
+          type: string
+          description: Base58 dynamic tip address.
+        validity_duration_seconds:
+          type: integer
+          format: int64
+          description: TTL in seconds this address will be accepted for.
+        expires_at:
+          type: integer
+          format: int64
+          description: Absolute Unix-seconds expiry. Authoritative — prefer over `validity_duration_seconds`.
+    BatchTipAddressResponse:
+      type: object
+      description: Returned when any query parameter is present.
+      required:
+      - addresses
+      - ttl_seconds
+      - requested_ttl_seconds
+      - expires_at
+      - min_lamports
+      - issued_by
+      properties:
+        addresses:
+          type: array
+          description: Base58 dynamic tip addresses. **May be shorter than `count`** if this edge's slice ran low mid-request.
+          items:
+            type: string
+        ttl_seconds:
+          type: integer
+          format: int64
+          description: The TTL class you actually got (snapped **up** from `requested_ttl_seconds`).
+        requested_ttl_seconds:
+          type: integer
+          format: int64
+          description: The `ttl` query value you passed in.
+        expires_at:
+          type: integer
+          format: int64
+          description: Absolute Unix-seconds expiry, shared by every address in the returned batch. Authoritative — prefer over `ttl_seconds`.
+        min_lamports:
+          type: integer
+          format: int64
+          description: Rent-exempt floor for a new account. A route's `minimum_lamports` may be higher.
+          example: 890880
+        issued_by:
+          type: string
+          description: Informational — which edge issued the batch. Submissions may go to any edge.
+          example: nyc1
+    ErrorBody:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        max_ttl_seconds:
+          type: integer
+          format: int64
+        max_count:
+          type: integer
+          format: int32
+    QuotaExceededBody:
+      type: object
+      required:
+      - error
+      - reason
+      properties:
+        error:
+          type: string
+          enum:
+          - quota_exceeded
+        reason:
+          type: string
+          enum:
+          - rate limit
+          - daily cap
+        retry_after_seconds:
+          type: integer
+          format: int64
+    UnavailableBody:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+          enum:
+          - unavailable
+        details:
+          type: string
+        ttl_seconds:
+          type: integer
+          format: int64
+  securitySchemes:
+    AuthHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Pass `Authorization: <api-key>` on each request. Also the quota key.'
+    URLParameter:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass `?api_key=<api-key>` on the URL. Also the quota key.
+security: *id001
