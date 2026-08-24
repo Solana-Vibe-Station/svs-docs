@@ -52,7 +52,25 @@ paths:
 
         - `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`
 
+        **Selecting upstreams (optional)**
+
+        By default the transaction fans out to every upstream configured for this tier. To restrict it to a subset, pass an allow-list either as the `?only=` query parameter or as `params[1].onlyUpstreams` in the body (or both — they combine). Names are case-insensitive and operator-defined per tier; `jito` always refers to the Jito bundle forward where it is enabled, so **omit `jito`** to opt out of Jito forwarding.
+
+        - `?only=swqos` — send only to the `swqos` upstream.
+        - `?only=swqos,harmonic` — send only to `swqos` and `harmonic`.
+        - `params[1].onlyUpstreams: ["swqos"]` — same, as a body field.
+
+        An unknown name returns `400 Unknown upstream name` (the error lists the selectable names for this tier). The list must leave at least one fan-out upstream — the built-in `jito` forward alone cannot answer a `sendTransaction`.
+
         **Keep-alive:** issue periodic `getHealth` calls to the same tier endpoint to maintain your connection.
+      parameters:
+      - name: only
+        in: query
+        required: false
+        description: 'Comma-separated allow-list of upstream names to send to (case-insensitive). Combines with `params[1].onlyUpstreams` if both are set. An unknown name returns `400 Unknown upstream name`. Omit `jito` to opt out of Jito forwarding.'
+        schema:
+          type: string
+        example: swqos,harmonic
       requestBody:
         required: true
         content:
@@ -121,6 +139,18 @@ paths:
                         minContextSlot:
                           type: integer
                           format: int64
+                        onlyUpstreams:
+                          description: |
+                            Optional allow-list of upstream names (case-insensitive) — send this transaction **only** to these upstreams. May be an array or a comma-separated string; combines with the `?only=` query. This field is Lightspeed's, not Solana's, and is stripped before forwarding so upstreams never see it. Omit `jito` to opt out of Jito forwarding. Same `400`s as `?only=`.
+                          oneOf:
+                          - type: array
+                            items:
+                              type: string
+                            example:
+                            - swqos
+                            - harmonic
+                          - type: string
+                            example: swqos,harmonic
             examples:
               default:
                 summary: Standard Lightspeed sendTransaction request.
