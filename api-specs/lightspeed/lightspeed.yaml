@@ -57,7 +57,7 @@ paths:
         By default the transaction fans out to every upstream configured for this tier. To restrict it to a subset, pass an allow-list either as the `?only=` query parameter or as `params[1].onlyUpstreams` in the body (or both — they combine). Names are case-insensitive and operator-defined per tier; `jito` always refers to the Jito bundle forward where it is enabled, so **omit `jito`** to opt out of Jito forwarding.
 
         - `?only=swqos` — send only to the `swqos` upstream.
-        - `?only=swqos,harmonic` — send only to `swqos` and `harmonic`.
+        - `?only=swqos,jito` — send only to `swqos` and `jito`.
         - `params[1].onlyUpstreams: ["swqos"]` — same, as a body field.
 
         An unknown name returns `400 Unknown upstream name` (the error lists the selectable names for this tier). The list must leave at least one fan-out upstream — the built-in `jito` forward alone cannot answer a `sendTransaction`.
@@ -70,7 +70,7 @@ paths:
         description: 'Comma-separated allow-list of upstream names to send to (case-insensitive). Combines with `params[1].onlyUpstreams` if both are set. An unknown name returns `400 Unknown upstream name`. Omit `jito` to opt out of Jito forwarding.'
         schema:
           type: string
-        example: swqos,harmonic
+        example: swqos
       requestBody:
         required: true
         content:
@@ -148,9 +148,8 @@ paths:
                               type: string
                             example:
                             - swqos
-                            - harmonic
                           - type: string
-                            example: swqos,harmonic
+                            example: swqos
             examples:
               default:
                 summary: Standard Lightspeed sendTransaction request.
