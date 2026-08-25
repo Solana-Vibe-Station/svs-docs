@@ -53,9 +53,6 @@ paths:
 
         `expires_at` is absolute and authoritative — always prefer it over `ttl_seconds`. All addresses in a batch expire together, so `expires_at` may exceed "now + ttl" by up to one batch window.
 
-        **Quota**
-
-        `Authorization: <api-key>` is the quota key for a token bucket (rate + burst, optional daily cap). Requests without an API key share one anonymous bucket.
       parameters:
       - name: ttl
         in: query
