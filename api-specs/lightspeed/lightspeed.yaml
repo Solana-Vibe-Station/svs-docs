@@ -4,7 +4,12 @@ info:
   description: |-
     Lightspeed is the SVS low-latency transaction landing service. Sending a `sendTransaction` JSON-RPC request to the `/lightspeed` path on any tier endpoint forwards the signed transaction through SVS's Lightspeed engine, which races it across multiple upstream peers based on the included tip.
 
-    A minimum tip of **0.001 SOL (1,000,000 lamports)** is required: the transaction must include a system-program transfer instruction sending at least that amount to the Lightspeed tip address `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`. The request must also set `skipPreflight: true` and the transaction must be fully signed and serialized.
+    A minimum tip of **0.001 SOL (1,000,000 lamports)** is required: the transaction must include a system-program transfer instruction sending at least that amount to a Lightspeed tip address. Two kinds of tip destinations are accepted:
+
+    - **Static tip address** — the well-known, always-valid address `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`. Only needs to meet the route minimum.
+    - **Stealth dynamic tip addresses** — one-time-use addresses fetched at runtime from [`GET /lightspeed/fetchtipaddress`](/api-specs/lightspeed/fetchTipAddress.yaml). Each address is unique (never issued to anyone else, ever) and accepted on **every** Lightspeed edge in every region the instant it is issued. Because they are unpredictable and reused nowhere, dynamic tips are much harder for on-chain observers to fingerprint as Lightspeed submissions. Dynamic addresses must receive **≥ `min_lamports`** (currently `890880`, the rent-exempt floor for a new account) **and** the route minimum.
+
+    The request must also set `skipPreflight: true` and the transaction must be fully signed and serialized.
 
     Use `getHealth` against the same tier endpoint to keep the connection alive when idle.
   version: 1.0.0
@@ -44,13 +49,16 @@ paths:
 
         **Requirements**
 
-        1. The transaction must include a system-transfer instruction sending **≥ 0.001 SOL (1,000,000 lamports)** to a Lightspeed tip address.
-        2. The configuration object **must** set `skipPreflight: true`.
-        3. The transaction must be fully signed and serialized (base58 or base64).
+        1. The transaction must include a **top-level `System::Transfer`** instruction (program `11111111111111111111111111111111`) whose destination is a Lightspeed tip address in the transaction's static account keys. CPI transfers and destinations resolved through an address-lookup table are **not** detected and will be rejected.
+        2. The tipping transfer must meet the route minimum (**≥ 0.001 SOL / 1,000,000 lamports**). If tipping a **dynamic** address, it must also meet `min_lamports` (currently 890,880 — the rent-exempt floor for a new account).
+        3. The first qualifying transfer in instruction order is the one recorded.
+        4. The configuration object **must** set `skipPreflight: true`.
+        5. The transaction must be fully signed and serialized (base58 or base64).
 
         **Lightspeed tip addresses**
 
-        - `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`
+        - **Static** (always valid, no fetch required): `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip`
+        - **Stealth dynamic** (recommended for maximum landing performance and on-chain unpredictability): fetch via `GET /lightspeed/fetchtipaddress`. Dynamic addresses are single-holder, time-boxed, and accepted on every edge the instant they are issued. A held address may be reused by its holder any number of times until `expires_at`. Discover the ladder of available TTLs and current quota via `GET /lightspeed/tipinfo`.
 
         **Selecting upstreams (optional)**
 
@@ -110,7 +118,7 @@ paths:
                     anyOf:
                     - title: signed_transaction
                       type: string
-                      description: Fully signed and serialized transaction containing your instructions plus a system-transfer of ≥ 0.001 SOL to a Lightspeed tip address. Base58 or base64 encoded.
+                      description: Fully signed and serialized transaction containing your instructions plus a top-level `System::Transfer` to a Lightspeed tip address — either the static address `svsMoWJBwLcs8JgfN8VaF111tAc199KpYeTKRwxRtip` or a dynamic address fetched from `/lightspeed/fetchtipaddress`. Base58 or base64 encoded.
                     - title: config
                       type: object
                       required:
